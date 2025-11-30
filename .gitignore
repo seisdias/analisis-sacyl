@@ -3,3 +3,5 @@
 *.log
 /build/
 __pycache__/
+._*
+
