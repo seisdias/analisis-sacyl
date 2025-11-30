@@ -2,3 +2,4 @@
 *.pdf
 *.log
 /build/
+__pycache__/
