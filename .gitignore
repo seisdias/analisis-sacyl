@@ -5,4 +5,5 @@
 __pycache__/
 ._*
 .idea/
+*.pyc         # Ignora archivos .pyc sueltos
 
