@@ -4,5 +4,5 @@
 /build/
 __pycache__/
 ._*
-._idea/
+.idea/
 
