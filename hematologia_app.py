@@ -13,6 +13,7 @@ from pdf_to_json import parse_hematology_pdf
 from analisis_view import AnalisisView
 from charts_view import ChartsView
 from ranges_config import RangesManager, RangesDialog
+from pathlib import Path
 import logging
 
 
@@ -78,9 +79,9 @@ class HematologiaApp(tk.Tk):
         menubar.add_cascade(label="Archivo", menu=menu_archivo)
 
         # --- Menú Edición ---
-        self.menu_edicion = tk.Menu(menubar, tearoff=0)  # ⬅️ AHORA ES self.menu_edicion
+        self.menu_edicion = tk.Menu(menubar, tearoff=0)
         self.menu_edicion.add_command(
-            label="Importar análisis desde PDF...",       # ⬅️ Texto alineado con _actualizar_estado_menus
+            label="Importar análisis desde PDF...",
             command=self.importar_analisis
         )
         menubar.add_cascade(label="Edición", menu=self.menu_edicion)
@@ -104,28 +105,36 @@ class HematologiaApp(tk.Tk):
         # Asignar la barra de menús a la ventana
         self.config(menu=menubar)
 
-
     def _crear_contenido_inicial(self):
         # Contenedor principal
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
 
-        etiqueta = tk.Label(
+        self.header_label = tk.Label(
             container,
-            text="Aplicación de análisis de hematología (Borja Alonso Tristán, 2025)",
+            text="Análisis de Hematología",
             font=("Segoe UI", 10),
             justify="center"
         )
-        etiqueta.pack(side="top", pady=10)
+        self.header_label.pack(side="top", pady=10)
 
         # Paned vertical para separar tabla (arriba) y gráficas (abajo)
-        paned = ttk.PanedWindow(container, orient="vertical")
+        paned = ttk.PanedWindow(
+            container,
+            orient="vertical"
+        )
+        try:
+            paned.configure(sashwidth=8, sashrelief="raised")
+        except tk.TclError:
+            # Algunos Tk no soportan estas opciones
+            pass
+
         paned.pack(fill="both", expand=True, padx=10, pady=10)
 
         top_frame = ttk.Frame(paned)
         bottom_frame = ttk.Frame(paned)
 
-        paned.add(top_frame, weight=3)   # más espacio a la tabla al inicio
+        paned.add(top_frame, weight=3)
         paned.add(bottom_frame, weight=2)
 
         # --- Vista de análisis (tabla) ---
@@ -146,7 +155,8 @@ class HematologiaApp(tk.Tk):
         )
         self.charts_view.pack(fill="both", expand=True)
 
-
+        # Inicializar texto de cabecera (sin paciente todavía)
+        self._update_patient_label()
 
     # ==========================
     #   MÉTODOS DEL MENÚ ARCHIVO
@@ -168,7 +178,6 @@ class HematologiaApp(tk.Tk):
             return
 
         try:
-            # Si existe, preguntamos
             from pathlib import Path
             db_path = Path(ruta)
             overwrite = False
@@ -197,6 +206,7 @@ class HematologiaApp(tk.Tk):
             self.charts_view.set_db(self.db)
             self.charts_view.refresh()
             self._actualizar_estado_menus()
+            self._update_patient_label()
 
         except Exception as e:
             messagebox.showerror(
@@ -227,13 +237,14 @@ class HematologiaApp(tk.Tk):
                 "Base de datos de Paciente abierta",
                 f"Se ha abierto la base de datos de Paciente:\n{ruta}"
             )
-            
+
             # Actualizar vista central y menús
             self.analisis_view.set_db(self.db)
             self.analisis_view.refresh()
             self.charts_view.set_db(self.db)
             self.charts_view.refresh()
             self._actualizar_estado_menus()
+            self._update_patient_label()
 
         except FileNotFoundError as e:
             messagebox.showerror(
@@ -259,7 +270,7 @@ class HematologiaApp(tk.Tk):
                 "Base de datos de Paciente cerrada",
                 f"Se ha cerrado la base de datos de Paciente:\n{bd_anterior}"
             )
-            
+
             # Limpiar vista y deshabilitar menús de edición
             if hasattr(self, "analisis_view"):
                 self.analisis_view.clear()
@@ -267,6 +278,7 @@ class HematologiaApp(tk.Tk):
                 self.charts_view.clear()
 
             self._actualizar_estado_menus()
+            self._update_patient_label()
 
         else:
             messagebox.showwarning(
@@ -275,7 +287,6 @@ class HematologiaApp(tk.Tk):
             )
 
     def cerrar_aplicacion(self):
-        # Aquí podríamos hacer limpieza antes de salir
         self.destroy()
 
     # ===========================
@@ -297,50 +308,67 @@ class HematologiaApp(tk.Tk):
 
     def importar_analisis(self):
         """
-        Importa un análisis desde un PDF:
-        - Extrae los datos de hematología.
-        - Los convierte a JSON (en memoria).
-        - Inserta/reemplaza en la BD según la fecha del análisis.
+        Importa uno o varios informes PDF de laboratorio.
+
+        A partir de Fase 2:
+        - Se importan HEMATOLOGÍA, BIOQUÍMICA y ORINA (si vienen en el PDF).
         """
         if not self._asegurar_bd_abierta():
             return
 
-        ruta = filedialog.askopenfilename(
-            title="Seleccionar informe de laboratorio (PDF)",
-            filetypes=[
-                ("Archivos PDF", "*.pdf"),
-                ("Todos los archivos", "*.*")
-            ]
+        rutas = filedialog.askopenfilenames(
+            title="Seleccionar informes de laboratorio (PDF)",
+            filetypes=[("Archivos PDF", "*.pdf")]
         )
-        if not ruta:
+        if not rutas:
             return
 
-        try:
-            # 1) Parsear PDF -> dict con formato {"analisis": [ {...} ]}
-            data = parse_hematology_pdf(ruta)
+        ids_importados = []
+        errores = []
 
-            # 2) Insertar / reemplazar en la BD
-            ids = self.db.import_from_json(data)
+        for ruta in rutas:
+            try:
+                # Parsea TODO el informe (paciente + hematología + bioquímica + orina)
+                data = parse_hematology_pdf(ruta)
 
-            # 3) Refrescar la vista de análisis
-            if hasattr(self, "analisis_view"):
-                self.analisis_view.refresh()
-            if hasattr(self, "charts_view"):
-                self.charts_view.refresh()
+                # Importación completa:
+                # - paciente (internamente hace check_and_update_patient)
+                # - hematologia
+                # - bioquimica
+                # - orina
+                ids = self.db.import_from_json(data)
+                ids_importados.extend(ids)
 
+            except Exception as e:
+                errores.append(f"{Path(ruta).name}: {e}")
 
-            mensaje_ids = ", ".join(str(i) for i in ids) if ids else "(sin registros)"
-            messagebox.showinfo(
-                "Análisis importado",
-                "Se ha importado el análisis desde el PDF.\n\n"
-                f"Archivo: {ruta}\n"
-                f"Registros afectados (ID): {mensaje_ids}"
+        # REFRESCAR UNA VEZ AL FINAL
+        if hasattr(self, "analisis_view"):
+            self.analisis_view.refresh()
+        if hasattr(self, "charts_view"):
+            self.charts_view.refresh()
+
+        # Actualizar cabecera con posible paciente nuevo/actualizado
+        self._update_patient_label()
+
+        # MOSTRAR RESULTADO
+        if errores and ids_importados:
+            messagebox.showwarning(
+                "Importación parcial",
+                "Se importaron algunos análisis, pero hubo errores:\n\n"
+                + "\n".join(errores)
             )
-        except Exception as e:
+        elif errores and not ids_importados:
             messagebox.showerror(
-                "Error al importar desde PDF",
-                f"No se ha podido importar el análisis desde:\n{ruta}\n\n"
-                f"Detalle del error:\n{e}"
+                "Error en la importación",
+                "No se pudo importar ningún análisis:\n\n"
+                + "\n".join(errores)
+            )
+        else:
+            messagebox.showinfo(
+                "Importación completada",
+                f"Se importaron {len(ids_importados)} análisis de hematología "
+                f"(y, si existían, sus datos de bioquímica/orina)."
             )
 
     # =============================
@@ -352,7 +380,6 @@ class HematologiaApp(tk.Tk):
         Al cerrar, refresca AnalisisView y ChartsView para que
         usen los rangos actualizados.
         """
-        # Por si acaso
         if not hasattr(self, "ranges_manager") or self.ranges_manager is None:
             self.ranges_manager = RangesManager()
 
@@ -366,8 +393,6 @@ class HematologiaApp(tk.Tk):
         if hasattr(self, "charts_view"):
             self.charts_view.set_ranges_manager(self.ranges_manager)
             self.charts_view.refresh()
-
-
 
     # ============================
     #   MÉTODO DEL MENÚ ACERCA DE
@@ -399,6 +424,56 @@ class HematologiaApp(tk.Tk):
                 self.menu_edicion.entryconfig(label, state=estado)
             except Exception:
                 pass
+
+    def _update_patient_label(self):
+        """
+        Actualiza la etiqueta superior con los datos del paciente, si existen,
+        en DOS LÍNEAS:
+          - Línea 1: Nombre + Apellidos
+          - Línea 2: Sexo | Fecha nacimiento | Nº Historia
+        """
+        base = "Análisis de Hematología"
+
+        if self.db is None or not self.db.is_open:
+            self.header_label.config(text=base, font=("Segoe UI", 10))
+            return
+
+        pac = None
+        try:
+            pac = self.db.get_patient()
+        except Exception:
+            pac = None
+
+        if not pac:
+            self.header_label.config(
+                text=f"{base}\n\nPaciente: (sin datos)",
+                font=("Segoe UI", 10),
+            )
+            return
+
+        nombre = (pac.get("nombre") or "").strip()
+        apellidos = (pac.get("apellidos") or "").strip()
+        sexo = (pac.get("sexo") or "").strip()
+        fecha_nac = (pac.get("fecha_nacimiento") or "").strip()
+        historia = (pac.get("numero_historia") or "").strip()
+
+        linea1 = f"{nombre} {apellidos}".strip()
+        if not linea1:
+            linea1 = "(sin nombre)"
+
+        partes2 = []
+        if sexo:
+            partes2.append(f"Sexo: {sexo}")
+        if fecha_nac:
+            partes2.append(f"Nac.: {fecha_nac}")
+        if historia:
+            partes2.append(f"Historia: {historia}")
+
+        linea2 = " | ".join(partes2) if partes2 else "(datos incompletos)"
+
+        texto = f"{base}\n\n{linea1}\n{linea2}"
+
+        self.header_label.config(text=texto, font=("Segoe UI", 10))
 
 
 if __name__ == "__main__":
