@@ -1,0 +1,2872 @@
+{
+  "NEUTRÓFILOS %": {
+    "normalized_key": "NEUTRÓFILOS %",
+    "original_names": [
+      "Neutrófilos %"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 41.0,
+        "max": 72.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Neutrófilos % *37.9 % 41-72",
+        "value": 37.9,
+        "ref_min": 41.0,
+        "ref_max": 72.0,
+        "unit": "%"
+      },
+      {
+        "line": "Neutrófilos % *20.2 % 41-72",
+        "value": 20.2,
+        "ref_min": 41.0,
+        "ref_max": 72.0,
+        "unit": "%"
+      },
+      {
+        "line": "Neutrófilos % *14.4 % 41-72",
+        "value": 14.4,
+        "ref_min": 41.0,
+        "ref_max": 72.0,
+        "unit": "%"
+      },
+      {
+        "line": "Neutrófilos % *14.7 % 41-72",
+        "value": 14.7,
+        "ref_min": 41.0,
+        "ref_max": 72.0,
+        "unit": "%"
+      },
+      {
+        "line": "Neutrófilos % *16.6 % 41-72",
+        "value": 16.6,
+        "ref_min": 41.0,
+        "ref_max": 72.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "LINFOCITOS %": {
+    "normalized_key": "LINFOCITOS %",
+    "original_names": [
+      "Linfocitos %"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 20.0,
+        "max": 51.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Linfocitos % **57.1 % 20-51",
+        "value": 57.1,
+        "ref_min": 20.0,
+        "ref_max": 51.0,
+        "unit": "%"
+      },
+      {
+        "line": "Linfocitos % **76.2 % 20-51",
+        "value": 76.2,
+        "ref_min": 20.0,
+        "ref_max": 51.0,
+        "unit": "%"
+      },
+      {
+        "line": "Linfocitos % **82.1 % 20-51",
+        "value": 82.1,
+        "ref_min": 20.0,
+        "ref_max": 51.0,
+        "unit": "%"
+      },
+      {
+        "line": "Linfocitos % **81.6 % 20-51",
+        "value": 81.6,
+        "ref_min": 20.0,
+        "ref_max": 51.0,
+        "unit": "%"
+      },
+      {
+        "line": "Linfocitos % **79.8 % 20-51",
+        "value": 79.8,
+        "ref_min": 20.0,
+        "ref_max": 51.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "MONOCITOS %": {
+    "normalized_key": "MONOCITOS %",
+    "original_names": [
+      "Monocitos %"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 2.0,
+        "max": 12.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Monocitos % 2.9 % 2-12",
+        "value": 2.9,
+        "ref_min": 2.0,
+        "ref_max": 12.0,
+        "unit": "%"
+      },
+      {
+        "line": "Monocitos % 2.1 % 2-12",
+        "value": 2.1,
+        "ref_min": 2.0,
+        "ref_max": 12.0,
+        "unit": "%"
+      },
+      {
+        "line": "Monocitos % 2.1 % 2-12",
+        "value": 2.1,
+        "ref_min": 2.0,
+        "ref_max": 12.0,
+        "unit": "%"
+      },
+      {
+        "line": "Monocitos % *1.4 % 2-12",
+        "value": 1.4,
+        "ref_min": 2.0,
+        "ref_max": 12.0,
+        "unit": "%"
+      },
+      {
+        "line": "Monocitos % *1.9 % 2-12",
+        "value": 1.9,
+        "ref_min": 2.0,
+        "ref_max": 12.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "EOSINÓFILOS %": {
+    "normalized_key": "EOSINÓFILOS %",
+    "original_names": [
+      "Eosinófilos %"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 8.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Eosinófilos % 1.7 % 0-8",
+        "value": 1.7,
+        "ref_min": 0.0,
+        "ref_max": 8.0,
+        "unit": "%"
+      },
+      {
+        "line": "Eosinófilos % 1.2 % 0-8",
+        "value": 1.2,
+        "ref_min": 0.0,
+        "ref_max": 8.0,
+        "unit": "%"
+      },
+      {
+        "line": "Eosinófilos % 1.1 % 0-8",
+        "value": 1.1,
+        "ref_min": 0.0,
+        "ref_max": 8.0,
+        "unit": "%"
+      },
+      {
+        "line": "Eosinófilos % 1.5 % 0-8",
+        "value": 1.5,
+        "ref_min": 0.0,
+        "ref_max": 8.0,
+        "unit": "%"
+      },
+      {
+        "line": "Eosinófilos % 1.2 % 0-8",
+        "value": 1.2,
+        "ref_min": 0.0,
+        "ref_max": 8.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "BASÓFILOS %": {
+    "normalized_key": "BASÓFILOS %",
+    "original_names": [
+      "Basófilos %"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 1.8
+      }
+    ],
+    "examples": [
+      {
+        "line": "Basófilos % 0.4 % 0-1.8",
+        "value": 0.4,
+        "ref_min": 0.0,
+        "ref_max": 1.8,
+        "unit": "%"
+      },
+      {
+        "line": "Basófilos % 0.3 % 0-1.8",
+        "value": 0.3,
+        "ref_min": 0.0,
+        "ref_max": 1.8,
+        "unit": "%"
+      },
+      {
+        "line": "Basófilos % 0.3 % 0-1.8",
+        "value": 0.3,
+        "ref_min": 0.0,
+        "ref_max": 1.8,
+        "unit": "%"
+      },
+      {
+        "line": "Basófilos % 0.8 % 0-1.8",
+        "value": 0.8,
+        "ref_min": 0.0,
+        "ref_max": 1.8,
+        "unit": "%"
+      },
+      {
+        "line": "Basófilos % 0.5 % 0-1.8",
+        "value": 0.5,
+        "ref_min": 0.0,
+        "ref_max": 1.8,
+        "unit": "%"
+      }
+    ]
+  },
+  "HEMOGLOBINA": {
+    "normalized_key": "HEMOGLOBINA",
+    "original_names": [
+      "Hemoglobina"
+    ],
+    "units": [
+      "g/dL"
+    ],
+    "ranges": [
+      {
+        "min": 12.0,
+        "max": 18.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Hemoglobina 15.1 g/dL 12-18",
+        "value": 15.1,
+        "ref_min": 12.0,
+        "ref_max": 18.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Hemoglobina 13 g/dL 12-18",
+        "value": 13.0,
+        "ref_min": 12.0,
+        "ref_max": 18.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Hemoglobina 12.4 g/dL 12-18",
+        "value": 12.4,
+        "ref_min": 12.0,
+        "ref_max": 18.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Hemoglobina 12.5 g/dL 12-18",
+        "value": 12.5,
+        "ref_min": 12.0,
+        "ref_max": 18.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Hemoglobina *11.6 g/dL 12-18",
+        "value": 11.6,
+        "ref_min": 12.0,
+        "ref_max": 18.0,
+        "unit": "g/dL"
+      }
+    ]
+  },
+  "HEMATOCRITO": {
+    "normalized_key": "HEMATOCRITO",
+    "original_names": [
+      "Hematocrito"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 38.0,
+        "max": 52.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Hematocrito 42.7 % 38-52",
+        "value": 42.7,
+        "ref_min": 38.0,
+        "ref_max": 52.0,
+        "unit": "%"
+      },
+      {
+        "line": "Hematocrito *37.3 % 38-52",
+        "value": 37.3,
+        "ref_min": 38.0,
+        "ref_max": 52.0,
+        "unit": "%"
+      },
+      {
+        "line": "Hematocrito *34.6 % 38-52",
+        "value": 34.6,
+        "ref_min": 38.0,
+        "ref_max": 52.0,
+        "unit": "%"
+      },
+      {
+        "line": "Hematocrito *36.1 % 38-52",
+        "value": 36.1,
+        "ref_min": 38.0,
+        "ref_max": 52.0,
+        "unit": "%"
+      },
+      {
+        "line": "Hematocrito *31.8 % 38-52",
+        "value": 31.8,
+        "ref_min": 38.0,
+        "ref_max": 52.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "V.C.M": {
+    "normalized_key": "V.C.M",
+    "original_names": [
+      "V.C.M"
+    ],
+    "units": [
+      "fL"
+    ],
+    "ranges": [
+      {
+        "min": 80.0,
+        "max": 98.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "V.C.M 96.6 fL 80-98",
+        "value": 96.6,
+        "ref_min": 80.0,
+        "ref_max": 98.0,
+        "unit": "fL"
+      },
+      {
+        "line": "V.C.M *104.8 fL 80-98",
+        "value": 104.8,
+        "ref_min": 80.0,
+        "ref_max": 98.0,
+        "unit": "fL"
+      },
+      {
+        "line": "V.C.M *105.7 fL 80-98",
+        "value": 105.7,
+        "ref_min": 80.0,
+        "ref_max": 98.0,
+        "unit": "fL"
+      },
+      {
+        "line": "V.C.M *109.9 fL 80-98",
+        "value": 109.9,
+        "ref_min": 80.0,
+        "ref_max": 98.0,
+        "unit": "fL"
+      },
+      {
+        "line": "V.C.M *106.4 fL 80-98",
+        "value": 106.4,
+        "ref_min": 80.0,
+        "ref_max": 98.0,
+        "unit": "fL"
+      }
+    ]
+  },
+  "H.C.M.": {
+    "normalized_key": "H.C.M.",
+    "original_names": [
+      "H.C.M."
+    ],
+    "units": [
+      "pg"
+    ],
+    "ranges": [
+      {
+        "min": 26.0,
+        "max": 32.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "H.C.M. *34.1 pg 26-32",
+        "value": 34.1,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "pg"
+      },
+      {
+        "line": "H.C.M. **36.6 pg 26-32",
+        "value": 36.6,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "pg"
+      },
+      {
+        "line": "H.C.M. **37.8 pg 26-32",
+        "value": 37.8,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "pg"
+      },
+      {
+        "line": "H.C.M. **38.1 pg 26-32",
+        "value": 38.1,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "pg"
+      },
+      {
+        "line": "H.C.M. **38.9 pg 26-32",
+        "value": 38.9,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "pg"
+      }
+    ]
+  },
+  "C.H.C.M.": {
+    "normalized_key": "C.H.C.M.",
+    "original_names": [
+      "C.H.C.M."
+    ],
+    "units": [
+      "g/dL"
+    ],
+    "ranges": [
+      {
+        "min": 32.0,
+        "max": 35.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "C.H.C.M. *35.3 g/dL 32-35",
+        "value": 35.3,
+        "ref_min": 32.0,
+        "ref_max": 35.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "C.H.C.M. 34.9 g/dL 32-35",
+        "value": 34.9,
+        "ref_min": 32.0,
+        "ref_max": 35.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "C.H.C.M. *35.8 g/dL 32-35",
+        "value": 35.8,
+        "ref_min": 32.0,
+        "ref_max": 35.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "C.H.C.M. 34.7 g/dL 32-35",
+        "value": 34.7,
+        "ref_min": 32.0,
+        "ref_max": 35.0,
+        "unit": "g/dL"
+      },
+      {
+        "line": "C.H.C.M. *36.6 g/dL 32-35",
+        "value": 36.6,
+        "ref_min": 32.0,
+        "ref_max": 35.0,
+        "unit": "g/dL"
+      }
+    ]
+  },
+  "R.D.W": {
+    "normalized_key": "R.D.W",
+    "original_names": [
+      "R.D.W"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 12.0,
+        "max": 14.6
+      }
+    ],
+    "examples": [
+      {
+        "line": "R.D.W 12.6 % 12-14.6",
+        "value": 12.6,
+        "ref_min": 12.0,
+        "ref_max": 14.6,
+        "unit": "%"
+      },
+      {
+        "line": "R.D.W 13 % 12-14.6",
+        "value": 13.0,
+        "ref_min": 12.0,
+        "ref_max": 14.6,
+        "unit": "%"
+      },
+      {
+        "line": "R.D.W 13.1 % 12-14.6",
+        "value": 13.1,
+        "ref_min": 12.0,
+        "ref_max": 14.6,
+        "unit": "%"
+      },
+      {
+        "line": "R.D.W 13.1 % 12-14.6",
+        "value": 13.1,
+        "ref_min": 12.0,
+        "ref_max": 14.6,
+        "unit": "%"
+      },
+      {
+        "line": "R.D.W 13 % 12-14.6",
+        "value": 13.0,
+        "ref_min": 12.0,
+        "ref_max": 14.6,
+        "unit": "%"
+      }
+    ]
+  },
+  "VOLUMEN PLAQUETAR MEDIO": {
+    "normalized_key": "VOLUMEN PLAQUETAR MEDIO",
+    "original_names": [
+      "Volumen Plaquetar Medio"
+    ],
+    "units": [
+      "fL"
+    ],
+    "ranges": [
+      {
+        "min": 7.0,
+        "max": 12.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Volumen Plaquetar Medio 9.8 fL 7-12.",
+        "value": 9.8,
+        "ref_min": 7.0,
+        "ref_max": 12.0,
+        "unit": "fL"
+      },
+      {
+        "line": "Volumen Plaquetar Medio 8.6 fL 7-12.",
+        "value": 8.6,
+        "ref_min": 7.0,
+        "ref_max": 12.0,
+        "unit": "fL"
+      },
+      {
+        "line": "Volumen Plaquetar Medio 8.9 fL 7-12.",
+        "value": 8.9,
+        "ref_min": 7.0,
+        "ref_max": 12.0,
+        "unit": "fL"
+      },
+      {
+        "line": "Volumen Plaquetar Medio 8.7 fL 7-12.",
+        "value": 8.7,
+        "ref_min": 7.0,
+        "ref_max": 12.0,
+        "unit": "fL"
+      },
+      {
+        "line": "Volumen Plaquetar Medio 8.1 fL 7-12.",
+        "value": 8.1,
+        "ref_min": 7.0,
+        "ref_max": 12.0,
+        "unit": "fL"
+      }
+    ]
+  },
+  "SODIO": {
+    "normalized_key": "SODIO",
+    "original_names": [
+      "Sodio"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 136.0,
+        "max": 146.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Sodio 138 mmol/L 136-146",
+        "value": 138.0,
+        "ref_min": 136.0,
+        "ref_max": 146.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Sodio 139 mmol/L 136-146",
+        "value": 139.0,
+        "ref_min": 136.0,
+        "ref_max": 146.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Sodio 140 mmol/L 136-146",
+        "value": 140.0,
+        "ref_min": 136.0,
+        "ref_max": 146.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Sodio 138 mmol/L 136-146",
+        "value": 138.0,
+        "ref_min": 136.0,
+        "ref_max": 146.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Sodio 141 mmol/L 136-146",
+        "value": 141.0,
+        "ref_min": 136.0,
+        "ref_max": 146.0,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "POTASIO": {
+    "normalized_key": "POTASIO",
+    "original_names": [
+      "Potasio"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 3.5,
+        "max": 5.1
+      }
+    ],
+    "examples": [
+      {
+        "line": "Potasio 4.3 mmol/L 3.5-5.1",
+        "value": 4.3,
+        "ref_min": 3.5,
+        "ref_max": 5.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Potasio 4.1 mmol/L 3.5-5.1",
+        "value": 4.1,
+        "ref_min": 3.5,
+        "ref_max": 5.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Potasio 4.2 mmol/L 3.5-5.1",
+        "value": 4.2,
+        "ref_min": 3.5,
+        "ref_max": 5.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Potasio 4.3 mmol/L 3.5-5.1",
+        "value": 4.3,
+        "ref_min": 3.5,
+        "ref_max": 5.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Potasio *3.4 mmol/L 3.5-5.1",
+        "value": 3.4,
+        "ref_min": 3.5,
+        "ref_max": 5.1,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "CLORURO": {
+    "normalized_key": "CLORURO",
+    "original_names": [
+      "Cloruro"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 101.0,
+        "max": 109.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Cloruro 103 mmol/L 101-109",
+        "value": 103.0,
+        "ref_min": 101.0,
+        "ref_max": 109.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Cloruro 105 mmol/L 101-109",
+        "value": 105.0,
+        "ref_min": 101.0,
+        "ref_max": 109.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Cloruro 107 mmol/L 101-109",
+        "value": 107.0,
+        "ref_min": 101.0,
+        "ref_max": 109.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Cloruro 104 mmol/L 101-109",
+        "value": 104.0,
+        "ref_min": 101.0,
+        "ref_max": 109.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Cloruro 107 mmol/L 101-109",
+        "value": 107.0,
+        "ref_min": 101.0,
+        "ref_max": 109.0,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "GLUCOSA": {
+    "normalized_key": "GLUCOSA",
+    "original_names": [
+      "Glucosa"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 74.0,
+        "max": 110.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Glucosa 82 mg/dL 74-110",
+        "value": 82.0,
+        "ref_min": 74.0,
+        "ref_max": 110.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Glucosa 84 mg/dL 74-110",
+        "value": 84.0,
+        "ref_min": 74.0,
+        "ref_max": 110.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Glucosa 84 mg/dL 74-110",
+        "value": 84.0,
+        "ref_min": 74.0,
+        "ref_max": 110.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Glucosa 82 mg/dL 74-110",
+        "value": 82.0,
+        "ref_min": 74.0,
+        "ref_max": 110.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Glucosa 100 mg/dL 74-110",
+        "value": 100.0,
+        "ref_min": 74.0,
+        "ref_max": 110.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "UREA": {
+    "normalized_key": "UREA",
+    "original_names": [
+      "Urea"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 12.8,
+        "max": 42.8
+      }
+    ],
+    "examples": [
+      {
+        "line": "Urea *48.9 mg/dL 12.8-42.8",
+        "value": 48.9,
+        "ref_min": 12.8,
+        "ref_max": 42.8,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Urea *58.1 mg/dL 12.8-42.8",
+        "value": 58.1,
+        "ref_min": 12.8,
+        "ref_max": 42.8,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Urea *51.3 mg/dL 12.8-42.8",
+        "value": 51.3,
+        "ref_min": 12.8,
+        "ref_max": 42.8,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Urea *44.5 mg/dL 12.8-42.8",
+        "value": 44.5,
+        "ref_min": 12.8,
+        "ref_max": 42.8,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Urea 17.8 mg/dL 12.8-42.8",
+        "value": 17.8,
+        "ref_min": 12.8,
+        "ref_max": 42.8,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "CREATININA": {
+    "normalized_key": "CREATININA",
+    "original_names": [
+      "Creatinina"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 0.9,
+        "max": 1.3
+      },
+      {
+        "min": 22.0,
+        "max": 328.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Creatinina *0.86 mg/dL 0.9-1.3",
+        "value": 0.86,
+        "ref_min": 0.9,
+        "ref_max": 1.3,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Creatinina 218 mg/dL 22-328",
+        "value": 218.0,
+        "ref_min": 22.0,
+        "ref_max": 328.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Creatinina *0.82 mg/dL 0.9-1.3",
+        "value": 0.82,
+        "ref_min": 0.9,
+        "ref_max": 1.3,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Creatinina 222 mg/dL 22-328",
+        "value": 222.0,
+        "ref_min": 22.0,
+        "ref_max": 328.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Creatinina 0.95 mg/dL 0.9-1.3",
+        "value": 0.95,
+        "ref_min": 0.9,
+        "ref_max": 1.3,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "ACIDO ÚRICO": {
+    "normalized_key": "ACIDO ÚRICO",
+    "original_names": [
+      "Acido úrico"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 3.5,
+        "max": 7.2
+      }
+    ],
+    "examples": [
+      {
+        "line": "Acido úrico 5.65 mg/dL 3.5-7.2",
+        "value": 5.65,
+        "ref_min": 3.5,
+        "ref_max": 7.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Acido úrico 4.28 mg/dL 3.5-7.2",
+        "value": 4.28,
+        "ref_min": 3.5,
+        "ref_max": 7.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Acido úrico 4.77 mg/dL 3.5-7.2",
+        "value": 4.77,
+        "ref_min": 3.5,
+        "ref_max": 7.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Acido úrico *1.66 mg/dL 3.5-7.2",
+        "value": 1.66,
+        "ref_min": 3.5,
+        "ref_max": 7.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Acido úrico *1.5 mg/dL 3.5-7.2",
+        "value": 1.5,
+        "ref_min": 3.5,
+        "ref_max": 7.2,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "ASPARTATO AMINOTRANSFERASA (AST/GOT)": {
+    "normalized_key": "ASPARTATO AMINOTRANSFERASA (AST/GOT)",
+    "original_names": [
+      "Aspartato aminotransferasa (AST/GOT)"
+    ],
+    "units": [
+      "U/L"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 50.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Aspartato aminotransferasa (AST/GOT) 18 U/L 0-50",
+        "value": 18.0,
+        "ref_min": 0.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Aspartato aminotransferasa (AST/GOT) 19 U/L 0-50",
+        "value": 19.0,
+        "ref_min": 0.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Aspartato aminotransferasa (AST/GOT) 8 U/L 0-50",
+        "value": 8.0,
+        "ref_min": 0.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Aspartato aminotransferasa (AST/GOT) 8 U/L 0-50",
+        "value": 8.0,
+        "ref_min": 0.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Aspartato aminotransferasa (AST/GOT) 8 U/L 0-50",
+        "value": 8.0,
+        "ref_min": 0.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      }
+    ]
+  },
+  "BILIRRUBINA TOTAL": {
+    "normalized_key": "BILIRRUBINA TOTAL",
+    "original_names": [
+      "Bilirrubina Total"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 0.3,
+        "max": 1.2
+      }
+    ],
+    "examples": [
+      {
+        "line": "Bilirrubina Total 0.97 mg/dL 0.3-1.2",
+        "value": 0.97,
+        "ref_min": 0.3,
+        "ref_max": 1.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Bilirrubina Total 1.16 mg/dL 0.3-1.2",
+        "value": 1.16,
+        "ref_min": 0.3,
+        "ref_max": 1.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Bilirrubina Total *1.23 mg/dL 0.3-1.2",
+        "value": 1.23,
+        "ref_min": 0.3,
+        "ref_max": 1.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Bilirrubina Total 1.09 mg/dL 0.3-1.2",
+        "value": 1.09,
+        "ref_min": 0.3,
+        "ref_max": 1.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Bilirrubina Total 1.09 mg/dL 0.3-1.2",
+        "value": 1.09,
+        "ref_min": 0.3,
+        "ref_max": 1.2,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "FOSFATASA ALCALINA": {
+    "normalized_key": "FOSFATASA ALCALINA",
+    "original_names": [
+      "Fosfatasa alcalina"
+    ],
+    "units": [
+      "U/L"
+    ],
+    "ranges": [
+      {
+        "min": 30.0,
+        "max": 120.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Fosfatasa alcalina 56 U/L 30-120",
+        "value": 56.0,
+        "ref_min": 30.0,
+        "ref_max": 120.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Fosfatasa alcalina 44 U/L 30-120",
+        "value": 44.0,
+        "ref_min": 30.0,
+        "ref_max": 120.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Fosfatasa alcalina 43 U/L 30-120",
+        "value": 43.0,
+        "ref_min": 30.0,
+        "ref_max": 120.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Fosfatasa alcalina 39 U/L 30-120",
+        "value": 39.0,
+        "ref_min": 30.0,
+        "ref_max": 120.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Fosfatasa alcalina *26 U/L 30-120",
+        "value": 26.0,
+        "ref_min": 30.0,
+        "ref_max": 120.0,
+        "unit": "U/L"
+      }
+    ]
+  },
+  "CALCIO": {
+    "normalized_key": "CALCIO",
+    "original_names": [
+      "Calcio"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 8.8,
+        "max": 10.6
+      }
+    ],
+    "examples": [
+      {
+        "line": "Calcio 9.19 mg/dL 8.8-10.6",
+        "value": 9.19,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio 9.4 mg/dL 8.8-10.6",
+        "value": 9.4,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio 9.22 mg/dL 8.8-10.6",
+        "value": 9.22,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio 9.5 mg/dL 8.8-10.6",
+        "value": 9.5,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio *7.95 mg/dL 8.8-10.6",
+        "value": 7.95,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "FOSFATO": {
+    "normalized_key": "FOSFATO",
+    "original_names": [
+      "Fosfato"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 2.4,
+        "max": 4.4
+      }
+    ],
+    "examples": [
+      {
+        "line": "Fosfato 3.51 mg/dL 2.4-4.4-",
+        "value": 3.51,
+        "ref_min": 2.4,
+        "ref_max": 4.4,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Fosfato 3.31 mg/dL 2.4-4.4-",
+        "value": 3.31,
+        "ref_min": 2.4,
+        "ref_max": 4.4,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Fosfato 3.18 mg/dL 2.4-4.4",
+        "value": 3.18,
+        "ref_min": 2.4,
+        "ref_max": 4.4,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Fosfato 3.18 mg/dL 2.4-4.4-",
+        "value": 3.18,
+        "ref_min": 2.4,
+        "ref_max": 4.4,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Fosfato 3.17 mg/dL 2.4-4.4",
+        "value": 3.17,
+        "ref_min": 2.4,
+        "ref_max": 4.4,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "HIERRO": {
+    "normalized_key": "HIERRO",
+    "original_names": [
+      "Hierro"
+    ],
+    "units": [
+      "µg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 65.0,
+        "max": 175.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Hierro 151 µg/dL 65-175",
+        "value": 151.0,
+        "ref_min": 65.0,
+        "ref_max": 175.0,
+        "unit": "µg/dL"
+      },
+      {
+        "line": "Hierro 131 µg/dL 65-175",
+        "value": 131.0,
+        "ref_min": 65.0,
+        "ref_max": 175.0,
+        "unit": "µg/dL"
+      },
+      {
+        "line": "Hierro 144 µg/dL 65-175",
+        "value": 144.0,
+        "ref_min": 65.0,
+        "ref_max": 175.0,
+        "unit": "µg/dL"
+      },
+      {
+        "line": "Hierro 123 µg/dL 65-175",
+        "value": 123.0,
+        "ref_min": 65.0,
+        "ref_max": 175.0,
+        "unit": "µg/dL"
+      },
+      {
+        "line": "Hierro *179 µg/dL 65-175",
+        "value": 179.0,
+        "ref_min": 65.0,
+        "ref_max": 175.0,
+        "unit": "µg/dL"
+      }
+    ]
+  },
+  "FERRITINA": {
+    "normalized_key": "FERRITINA",
+    "original_names": [
+      "Ferritina"
+    ],
+    "units": [
+      "ng/mL"
+    ],
+    "ranges": [
+      {
+        "min": 20.0,
+        "max": 300.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Ferritina *509.9 ng/mL 20-300",
+        "value": 509.9,
+        "ref_min": 20.0,
+        "ref_max": 300.0,
+        "unit": "ng/mL"
+      },
+      {
+        "line": "Ferritina *552.2 ng/mL 20-300",
+        "value": 552.2,
+        "ref_min": 20.0,
+        "ref_max": 300.0,
+        "unit": "ng/mL"
+      },
+      {
+        "line": "Ferritina *486.3 ng/mL 20-300espacio",
+        "value": 486.3,
+        "ref_min": 20.0,
+        "ref_max": 300.0,
+        "unit": "ng/mL"
+      },
+      {
+        "line": "Ferritina *572.6 ng/mL 20-300",
+        "value": 572.6,
+        "ref_min": 20.0,
+        "ref_max": 300.0,
+        "unit": "ng/mL"
+      },
+      {
+        "line": "Ferritina *655.7 ng/mL 20-300",
+        "value": 655.7,
+        "ref_min": 20.0,
+        "ref_max": 300.0,
+        "unit": "ng/mL"
+      }
+    ]
+  },
+  "VITAMINA B12": {
+    "normalized_key": "VITAMINA B12",
+    "original_names": [
+      "Vitamina B12"
+    ],
+    "units": [
+      "pg/mL"
+    ],
+    "ranges": [
+      {
+        "min": 180.0,
+        "max": 970.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Vitamina B12 201.1 pg/mL 180-970",
+        "value": 201.1,
+        "ref_min": 180.0,
+        "ref_max": 970.0,
+        "unit": "pg/mL"
+      },
+      {
+        "line": "Vitamina B12 196.6 pg/mL 180-970",
+        "value": 196.6,
+        "ref_min": 180.0,
+        "ref_max": 970.0,
+        "unit": "pg/mL"
+      },
+      {
+        "line": "Vitamina B12 195.9 pg/mL 180-970",
+        "value": 195.9,
+        "ref_min": 180.0,
+        "ref_max": 970.0,
+        "unit": "pg/mL"
+      }
+    ]
+  },
+  "ÁCIDO FÓLICO": {
+    "normalized_key": "ÁCIDO FÓLICO",
+    "original_names": [
+      "Ácido Fólico"
+    ],
+    "units": [
+      "ng/mL"
+    ],
+    "ranges": [
+      {
+        "min": 3.0,
+        "max": 30.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Ácido Fólico 8.8 ng/mL 3-30",
+        "value": 8.8,
+        "ref_min": 3.0,
+        "ref_max": 30.0,
+        "unit": "ng/mL"
+      },
+      {
+        "line": "Ácido Fólico 10 ng/mL 3-30",
+        "value": 10.0,
+        "ref_min": 3.0,
+        "ref_max": 30.0,
+        "unit": "ng/mL"
+      },
+      {
+        "line": "Ácido Fólico 9.3 ng/mL 3-30",
+        "value": 9.3,
+        "ref_min": 3.0,
+        "ref_max": 30.0,
+        "unit": "ng/mL"
+      }
+    ]
+  },
+  "HEMOGLOBINA GLICADA A1C (NGSP)": {
+    "normalized_key": "HEMOGLOBINA GLICADA A1C (NGSP)",
+    "original_names": [
+      "Hemoglobina glicada A1c (NGSP)"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 4.5,
+        "max": 5.7
+      }
+    ],
+    "examples": [
+      {
+        "line": "Hemoglobina glicada A1c (NGSP) 5.2 % 4.5-5.7",
+        "value": 5.2,
+        "ref_min": 4.5,
+        "ref_max": 5.7,
+        "unit": "%"
+      }
+    ]
+  },
+  "HEMOGLOBINA GLICADA A1C (IFCC)": {
+    "normalized_key": "HEMOGLOBINA GLICADA A1C (IFCC)",
+    "original_names": [
+      "Hemoglobina glicada A1c (IFCC)"
+    ],
+    "units": [
+      "mmol/mol"
+    ],
+    "ranges": [
+      {
+        "min": 20.0,
+        "max": 39.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Hemoglobina glicada A1c (IFCC) 33 mmol/mol 20-39espacio",
+        "value": 33.0,
+        "ref_min": 20.0,
+        "ref_max": 39.0,
+        "unit": "mmol/mol"
+      }
+    ]
+  },
+  "TSH": {
+    "normalized_key": "TSH",
+    "original_names": [
+      "TSH"
+    ],
+    "units": [
+      "mUI/L"
+    ],
+    "ranges": [
+      {
+        "min": 0.38,
+        "max": 5.33
+      }
+    ],
+    "examples": [
+      {
+        "line": "TSH 2.24 mUI/L 0.38-5.33",
+        "value": 2.24,
+        "ref_min": 0.38,
+        "ref_max": 5.33,
+        "unit": "mUI/L"
+      },
+      {
+        "line": "TSH 2.42 mUI/L 0.38-5.33",
+        "value": 2.42,
+        "ref_min": 0.38,
+        "ref_max": 5.33,
+        "unit": "mUI/L"
+      },
+      {
+        "line": "TSH 1.57 mUI/L 0.38-5.33",
+        "value": 1.57,
+        "ref_min": 0.38,
+        "ref_max": 5.33,
+        "unit": "mUI/L"
+      }
+    ]
+  },
+  "PROTEÍNAS TOTALES": {
+    "normalized_key": "PROTEÍNAS TOTALES",
+    "original_names": [
+      "Proteínas totales"
+    ],
+    "units": [
+      "g/dL"
+    ],
+    "ranges": [
+      {
+        "min": 6.6,
+        "max": 8.3
+      }
+    ],
+    "examples": [
+      {
+        "line": "Proteínas totales 6.69 g/dL 6.6-8.3",
+        "value": 6.69,
+        "ref_min": 6.6,
+        "ref_max": 8.3,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Proteínas totales 6.84 g/dL 6.6-8.3",
+        "value": 6.84,
+        "ref_min": 6.6,
+        "ref_max": 8.3,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Proteínas totales 7.32 g/dL 6.6-8.3",
+        "value": 7.32,
+        "ref_min": 6.6,
+        "ref_max": 8.3,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Proteínas totales *5.25 g/dL 6.6-8.3",
+        "value": 5.25,
+        "ref_min": 6.6,
+        "ref_max": 8.3,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Proteínas totales *5.23 g/dL 6.6-8.3",
+        "value": 5.23,
+        "ref_min": 6.6,
+        "ref_max": 8.3,
+        "unit": "g/dL"
+      }
+    ]
+  },
+  "ALANINA AMINOTRANSFERASA (ALT/GPT)": {
+    "normalized_key": "ALANINA AMINOTRANSFERASA (ALT/GPT)",
+    "original_names": [
+      "Alanina aminotransferasa (ALT/GPT)"
+    ],
+    "units": [
+      "U/L"
+    ],
+    "ranges": [
+      {
+        "min": 1.0,
+        "max": 50.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Alanina aminotransferasa (ALT/GPT) 15 U/L 1-50",
+        "value": 15.0,
+        "ref_min": 1.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Alanina aminotransferasa (ALT/GPT) 14 U/L 1-50",
+        "value": 14.0,
+        "ref_min": 1.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Alanina aminotransferasa (ALT/GPT) 18 U/L 1-50",
+        "value": 18.0,
+        "ref_min": 1.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Alanina aminotransferasa (ALT/GPT) 29 U/L 1-50",
+        "value": 29.0,
+        "ref_min": 1.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Alanina aminotransferasa (ALT/GPT) 23 U/L 1-50",
+        "value": 23.0,
+        "ref_min": 1.0,
+        "ref_max": 50.0,
+        "unit": "U/L"
+      }
+    ]
+  },
+  "ALBUMINA": {
+    "normalized_key": "ALBUMINA",
+    "original_names": [
+      "Albumina"
+    ],
+    "units": [
+      "g/dL"
+    ],
+    "ranges": [
+      {
+        "min": 3.5,
+        "max": 5.2
+      }
+    ],
+    "examples": [
+      {
+        "line": "Albumina 4.5 g/dL 3.5-5.2espacio",
+        "value": 4.5,
+        "ref_min": 3.5,
+        "ref_max": 5.2,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Albumina *3.3 g/dL 3.5-5.2espacio",
+        "value": 3.3,
+        "ref_min": 3.5,
+        "ref_max": 5.2,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Albumina *2.9 g/dL 3.5-5.2espacio",
+        "value": 2.9,
+        "ref_min": 3.5,
+        "ref_max": 5.2,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Albumina *3 g/dL 3.5-5.2espacio",
+        "value": 3.0,
+        "ref_min": 3.5,
+        "ref_max": 5.2,
+        "unit": "g/dL"
+      },
+      {
+        "line": "Albumina *3 g/dL 3.5-5.2espacio",
+        "value": 3.0,
+        "ref_min": 3.5,
+        "ref_max": 5.2,
+        "unit": "g/dL"
+      }
+    ]
+  },
+  "GAMMAGLUTAMIL TRANSFERASA (GGT)": {
+    "normalized_key": "GAMMAGLUTAMIL TRANSFERASA (GGT)",
+    "original_names": [
+      "Gammaglutamil transferasa (GGT)"
+    ],
+    "units": [
+      "U/L"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 55.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Gammaglutamil transferasa (GGT) 16 U/L 0-55",
+        "value": 16.0,
+        "ref_min": 0.0,
+        "ref_max": 55.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Gammaglutamil transferasa (GGT) 21 U/L 0-55",
+        "value": 21.0,
+        "ref_min": 0.0,
+        "ref_max": 55.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Gammaglutamil transferasa (GGT) 22 U/L 0-55",
+        "value": 22.0,
+        "ref_min": 0.0,
+        "ref_max": 55.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Gammaglutamil transferasa (GGT) 22 U/L 0-55",
+        "value": 22.0,
+        "ref_min": 0.0,
+        "ref_max": 55.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Gammaglutamil transferasa (GGT) 25 U/L 0-55",
+        "value": 25.0,
+        "ref_min": 0.0,
+        "ref_max": 55.0,
+        "unit": "U/L"
+      }
+    ]
+  },
+  "LACTATO DESHIDROGENASA (LDH)": {
+    "normalized_key": "LACTATO DESHIDROGENASA (LDH)",
+    "original_names": [
+      "Lactato deshidrogenasa (LDH)"
+    ],
+    "units": [
+      "U/L"
+    ],
+    "ranges": [
+      {
+        "min": 100.0,
+        "max": 190.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Lactato deshidrogenasa (LDH) 180 U/L 100-190",
+        "value": 180.0,
+        "ref_min": 100.0,
+        "ref_max": 190.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Lactato deshidrogenasa (LDH) 174 U/L 100-190",
+        "value": 174.0,
+        "ref_min": 100.0,
+        "ref_max": 190.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Lactato deshidrogenasa (LDH) 131 U/L 100-190",
+        "value": 131.0,
+        "ref_min": 100.0,
+        "ref_max": 190.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Lactato deshidrogenasa (LDH) 133 U/L 100-190",
+        "value": 133.0,
+        "ref_min": 100.0,
+        "ref_max": 190.0,
+        "unit": "U/L"
+      },
+      {
+        "line": "Lactato deshidrogenasa (LDH) 153 U/L 100-190",
+        "value": 153.0,
+        "ref_min": 100.0,
+        "ref_max": 190.0,
+        "unit": "U/L"
+      }
+    ]
+  },
+  "PROTEÍNA C REACTIVA": {
+    "normalized_key": "PROTEÍNA C REACTIVA",
+    "original_names": [
+      "Proteína C reactiva"
+    ],
+    "units": [
+      "mg/L"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 10.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Proteína C reactiva 0.3 mg/L 0-10",
+        "value": 0.3,
+        "ref_min": 0.0,
+        "ref_max": 10.0,
+        "unit": "mg/L"
+      },
+      {
+        "line": "Proteína C reactiva *12 mg/L 0-10",
+        "value": 12.0,
+        "ref_min": 0.0,
+        "ref_max": 10.0,
+        "unit": "mg/L"
+      },
+      {
+        "line": "Proteína C reactiva 9.7 mg/L 0-10-",
+        "value": 9.7,
+        "ref_min": 0.0,
+        "ref_max": 10.0,
+        "unit": "mg/L"
+      },
+      {
+        "line": "Proteína C reactiva *12.7 mg/L 0-10",
+        "value": 12.7,
+        "ref_min": 0.0,
+        "ref_max": 10.0,
+        "unit": "mg/L"
+      },
+      {
+        "line": "Proteína C reactiva **104.9 mg/L 0-10-",
+        "value": 104.9,
+        "ref_min": 0.0,
+        "ref_max": 10.0,
+        "unit": "mg/L"
+      }
+    ]
+  },
+  "INMUNOGLOBULINA G": {
+    "normalized_key": "INMUNOGLOBULINA G",
+    "original_names": [
+      "Inmunoglobulina G"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 650.0,
+        "max": 1600.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Inmunoglobulina G 1080 mg/dL 650-1600",
+        "value": 1080.0,
+        "ref_min": 650.0,
+        "ref_max": 1600.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Inmunoglobulina G 696 mg/dL 650-1600",
+        "value": 696.0,
+        "ref_min": 650.0,
+        "ref_max": 1600.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "INMUNOGLOBULINA A": {
+    "normalized_key": "INMUNOGLOBULINA A",
+    "original_names": [
+      "Inmunoglobulina A"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 60.0,
+        "max": 401.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Inmunoglobulina A 104 mg/dL 60-401",
+        "value": 104.0,
+        "ref_min": 60.0,
+        "ref_max": 401.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Inmunoglobulina A 74 mg/dL 60-401",
+        "value": 74.0,
+        "ref_min": 60.0,
+        "ref_max": 401.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "INMUNOGLOBULINA M": {
+    "normalized_key": "INMUNOGLOBULINA M",
+    "original_names": [
+      "Inmunoglobulina M"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 50.0,
+        "max": 300.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Inmunoglobulina M 86 mg/dL 50-300",
+        "value": 86.0,
+        "ref_min": 50.0,
+        "ref_max": 300.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Inmunoglobulina M 59 mg/dL 50-300",
+        "value": 59.0,
+        "ref_min": 50.0,
+        "ref_max": 300.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "TRANSFERRINA": {
+    "normalized_key": "TRANSFERRINA",
+    "original_names": [
+      "Transferrina"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 202.0,
+        "max": 336.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Transferrina 243 mg/dL 202-336",
+        "value": 243.0,
+        "ref_min": 202.0,
+        "ref_max": 336.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Transferrina 251 mg/dL 202-336",
+        "value": 251.0,
+        "ref_min": 202.0,
+        "ref_max": 336.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Transferrina *157 mg/dL 202-336",
+        "value": 157.0,
+        "ref_min": 202.0,
+        "ref_max": 336.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "ÍNDICE DE SATURACIÓN DE TRANSFERRINA": {
+    "normalized_key": "ÍNDICE DE SATURACIÓN DE TRANSFERRINA",
+    "original_names": [
+      "Índice de saturación de Transferrina"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 20.0,
+        "max": 45.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Índice de saturación de Transferrina *47 % 20-45.",
+        "value": 47.0,
+        "ref_min": 20.0,
+        "ref_max": 45.0,
+        "unit": "%"
+      },
+      {
+        "line": "Índice de saturación de Transferrina 39 % 20-45",
+        "value": 39.0,
+        "ref_min": 20.0,
+        "ref_max": 45.0,
+        "unit": "%"
+      },
+      {
+        "line": "Índice de saturación de Transferrina **90 % 20-45espacio",
+        "value": 90.0,
+        "ref_min": 20.0,
+        "ref_max": 45.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "RETICULOCITOS %": {
+    "normalized_key": "RETICULOCITOS %",
+    "original_names": [
+      "Reticulocitos %"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 0.5,
+        "max": 2.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Reticulocitos % 1.5 % 0.5-2",
+        "value": 1.5,
+        "ref_min": 0.5,
+        "ref_max": 2.0,
+        "unit": "%"
+      },
+      {
+        "line": "Reticulocitos % *0 % 0.5-2",
+        "value": 0.0,
+        "ref_min": 0.5,
+        "ref_max": 2.0,
+        "unit": "%"
+      },
+      {
+        "line": "Reticulocitos % *0 % 0.5-2",
+        "value": 0.0,
+        "ref_min": 0.5,
+        "ref_max": 2.0,
+        "unit": "%"
+      },
+      {
+        "line": "Reticulocitos % *0 % 0.5-2",
+        "value": 0.0,
+        "ref_min": 0.5,
+        "ref_max": 2.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "ERITROPOYETINA SUERO": {
+    "normalized_key": "ERITROPOYETINA SUERO",
+    "original_names": [
+      "Eritropoyetina Suero"
+    ],
+    "units": [
+      "UI/L"
+    ],
+    "ranges": [
+      {
+        "min": 4.3,
+        "max": 29.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Eritropoyetina Suero *83.3 UI/L 4.3-29",
+        "value": 83.3,
+        "ref_min": 4.3,
+        "ref_max": 29.0,
+        "unit": "UI/L"
+      }
+    ]
+  },
+  "BETA 2 MICROGLOBULINA": {
+    "normalized_key": "BETA 2 MICROGLOBULINA",
+    "original_names": [
+      "Beta 2 microglobulina"
+    ],
+    "units": [
+      "mg/L"
+    ],
+    "ranges": [
+      {
+        "min": 0.8,
+        "max": 2.4
+      }
+    ],
+    "examples": [
+      {
+        "line": "Beta 2 microglobulina 1.13 mg/L 0.8-2.4espacio",
+        "value": 1.13,
+        "ref_min": 0.8,
+        "ref_max": 2.4,
+        "unit": "mg/L"
+      }
+    ]
+  },
+  "INDICE DE PROTROMBINA (%) (IP)": {
+    "normalized_key": "INDICE DE PROTROMBINA (%) (IP)",
+    "original_names": [
+      "Indice de Protrombina (%) (IP)"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 60.0,
+        "max": 120.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Indice de Protrombina (%) (IP) 93 % 60-120",
+        "value": 93.0,
+        "ref_min": 60.0,
+        "ref_max": 120.0,
+        "unit": "%"
+      },
+      {
+        "line": "Indice de Protrombina (%) (IP) 84 % 60-120",
+        "value": 84.0,
+        "ref_min": 60.0,
+        "ref_max": 120.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "TTPA": {
+    "normalized_key": "TTPA",
+    "original_names": [
+      "TTPA"
+    ],
+    "units": [
+      "seg"
+    ],
+    "ranges": [
+      {
+        "min": 25.0,
+        "max": 38.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "TTPA 25 seg 25-38",
+        "value": 25.0,
+        "ref_min": 25.0,
+        "ref_max": 38.0,
+        "unit": "seg"
+      },
+      {
+        "line": "TTPA 26.2 seg 25-38",
+        "value": 26.2,
+        "ref_min": 25.0,
+        "ref_max": 38.0,
+        "unit": "seg"
+      }
+    ]
+  },
+  "FIBRINÓGENO (DERIVADO)": {
+    "normalized_key": "FIBRINÓGENO (DERIVADO)",
+    "original_names": [
+      "Fibrinógeno (Derivado)"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 180.0,
+        "max": 420.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Fibrinógeno (Derivado) *624 mg/dL 180-420espacio",
+        "value": 624.0,
+        "ref_min": 180.0,
+        "ref_max": 420.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Fibrinógeno (Derivado) *719 mg/dL 180-420espacio",
+        "value": 719.0,
+        "ref_min": 180.0,
+        "ref_max": 420.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "CALCIO IÓNICO": {
+    "normalized_key": "CALCIO IÓNICO",
+    "original_names": [
+      "Calcio iónico"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 4.5,
+        "max": 5.2
+      }
+    ],
+    "examples": [
+      {
+        "line": "Calcio iónico 4.5 mg/dL 4.5-5.2",
+        "value": 4.5,
+        "ref_min": 4.5,
+        "ref_max": 5.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio iónico 4.5 mg/dL 4.5-5.2",
+        "value": 4.5,
+        "ref_min": 4.5,
+        "ref_max": 5.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio iónico 4.91 mg/dL 4.5-5.2",
+        "value": 4.91,
+        "ref_min": 4.5,
+        "ref_max": 5.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio iónico 4.59 mg/dL 4.5-5.2",
+        "value": 4.59,
+        "ref_min": 4.5,
+        "ref_max": 5.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio iónico 4.87 mg/dL 4.5-5.2",
+        "value": 4.87,
+        "ref_min": 4.5,
+        "ref_max": 5.2,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "MAGNESIO": {
+    "normalized_key": "MAGNESIO",
+    "original_names": [
+      "Magnesio"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 1.5,
+        "max": 2.6
+      }
+    ],
+    "examples": [
+      {
+        "line": "Magnesio 1.62 mg/dL 1.5-2.6",
+        "value": 1.62,
+        "ref_min": 1.5,
+        "ref_max": 2.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Magnesio 1.61 mg/dL 1.5-2.6",
+        "value": 1.61,
+        "ref_min": 1.5,
+        "ref_max": 2.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Magnesio 1.57 mg/dL 1.5-2.6",
+        "value": 1.57,
+        "ref_min": 1.5,
+        "ref_max": 2.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Magnesio 1.53 mg/dL 1.5-2.6",
+        "value": 1.53,
+        "ref_min": 1.5,
+        "ref_max": 2.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Magnesio 1.85 mg/dL 1.5-2.6",
+        "value": 1.85,
+        "ref_min": 1.5,
+        "ref_max": 2.6,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "PROCALCITONINA": {
+    "normalized_key": "PROCALCITONINA",
+    "original_names": [
+      "Procalcitonina"
+    ],
+    "units": [
+      "ng/mL"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 0.5
+      }
+    ],
+    "examples": [
+      {
+        "line": "Procalcitonina 0.14 ng/mL 0-0.5",
+        "value": 0.14,
+        "ref_min": 0.0,
+        "ref_max": 0.5,
+        "unit": "ng/mL"
+      }
+    ]
+  },
+  "PCO2": {
+    "normalized_key": "PCO2",
+    "original_names": [
+      "pCO2"
+    ],
+    "units": [
+      "mmHg"
+    ],
+    "ranges": [
+      {
+        "min": 41.0,
+        "max": 51.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "pCO2 49 mmHg 41-51",
+        "value": 49.0,
+        "ref_min": 41.0,
+        "ref_max": 51.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pCO2 45 mmHg 41-51",
+        "value": 45.0,
+        "ref_min": 41.0,
+        "ref_max": 51.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pCO2 *39 mmHg 41-51",
+        "value": 39.0,
+        "ref_min": 41.0,
+        "ref_max": 51.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pCO2 *39 mmHg 41-51",
+        "value": 39.0,
+        "ref_min": 41.0,
+        "ref_max": 51.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pCO2 43 mmHg 41-51",
+        "value": 43.0,
+        "ref_min": 41.0,
+        "ref_max": 51.0,
+        "unit": "mmHg"
+      }
+    ]
+  },
+  "PO2": {
+    "normalized_key": "PO2",
+    "original_names": [
+      "pO2"
+    ],
+    "units": [
+      "mmHg"
+    ],
+    "ranges": [
+      {
+        "min": 24.0,
+        "max": 40.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "pO2 *42 mmHg 24-40",
+        "value": 42.0,
+        "ref_min": 24.0,
+        "ref_max": 40.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pO2 *41 mmHg 24-40",
+        "value": 41.0,
+        "ref_min": 24.0,
+        "ref_max": 40.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pO2 *51 mmHg 24-40",
+        "value": 51.0,
+        "ref_min": 24.0,
+        "ref_max": 40.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "pO2 *51 mmHg 24-40",
+        "value": 51.0,
+        "ref_min": 24.0,
+        "ref_max": 40.0,
+        "unit": "mmHg"
+      }
+    ]
+  },
+  "CO2 TOTAL (TCO2)": {
+    "normalized_key": "CO2 TOTAL (TCO2)",
+    "original_names": [
+      "CO2 Total (TCO2)"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 27.0,
+        "max": 33.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "CO2 Total (TCO2) 28.6 mmol/L 27-33",
+        "value": 28.6,
+        "ref_min": 27.0,
+        "ref_max": 33.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "CO2 Total (TCO2) 28.6 mmol/L 27-33",
+        "value": 28.6,
+        "ref_min": 27.0,
+        "ref_max": 33.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "CO2 Total (TCO2) *26.5 mmol/L 27-33",
+        "value": 26.5,
+        "ref_min": 27.0,
+        "ref_max": 33.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "CO2 Total (TCO2) *25.9 mmol/L 27-33",
+        "value": 25.9,
+        "ref_min": 27.0,
+        "ref_max": 33.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "CO2 Total (TCO2) 29.2 mmol/L 27-33",
+        "value": 29.2,
+        "ref_min": 27.0,
+        "ref_max": 33.0,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "SATURACIÓN DE OXÍGENO (SO2) CALCULADA": {
+    "normalized_key": "SATURACIÓN DE OXÍGENO (SO2) CALCULADA",
+    "original_names": [
+      "Saturación de Oxígeno (sO2) calculada"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 40.0,
+        "max": 70.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Saturación de Oxígeno (sO2) calculada *74.6 % 40-70",
+        "value": 74.6,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) calculada *75.7 % 40-70",
+        "value": 75.7,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) calculada *86.4 % 40-70",
+        "value": 86.4,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) calculada *86.4 % 40-70",
+        "value": 86.4,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "SATURACIÓN DE OXÍGENO (SO2)": {
+    "normalized_key": "SATURACIÓN DE OXÍGENO (SO2)",
+    "original_names": [
+      "Saturación de Oxígeno (sO2)"
+    ],
+    "units": [
+      "%"
+    ],
+    "ranges": [
+      {
+        "min": 40.0,
+        "max": 70.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Saturación de Oxígeno (sO2) 67.1 % 40-70",
+        "value": 67.1,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) 64.3 % 40-70",
+        "value": 64.3,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) *79.2 % 40-70",
+        "value": 79.2,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) 69.6 % 40-70",
+        "value": 69.6,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      },
+      {
+        "line": "Saturación de Oxígeno (sO2) *80 % 40-70",
+        "value": 80.0,
+        "ref_min": 40.0,
+        "ref_max": 70.0,
+        "unit": "%"
+      }
+    ]
+  },
+  "P50": {
+    "normalized_key": "P50",
+    "original_names": [
+      "p50"
+    ],
+    "units": [
+      "mmHg"
+    ],
+    "ranges": [
+      {
+        "min": 24.0,
+        "max": 28.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "p50 *32 mmHg 24-28",
+        "value": 32.0,
+        "ref_min": 24.0,
+        "ref_max": 28.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "p50 *33 mmHg 24-28",
+        "value": 33.0,
+        "ref_min": 24.0,
+        "ref_max": 28.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "p50 *31 mmHg 24-28",
+        "value": 31.0,
+        "ref_min": 24.0,
+        "ref_max": 28.0,
+        "unit": "mmHg"
+      },
+      {
+        "line": "p50 *31 mmHg 24-28",
+        "value": 31.0,
+        "ref_min": 24.0,
+        "ref_max": 28.0,
+        "unit": "mmHg"
+      }
+    ]
+  },
+  "BICARBONATO (CO3H-)": {
+    "normalized_key": "BICARBONATO (CO3H-)",
+    "original_names": [
+      "Bicarbonato (CO3H-)"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 26.0,
+        "max": 32.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Bicarbonato (CO3H-) 27.1 mmol/L 26-32",
+        "value": 27.1,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato (CO3H-) 27.2 mmol/L 26-32",
+        "value": 27.2,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato (CO3H-) *25.3 mmol/L 26-32",
+        "value": 25.3,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato (CO3H-) *24.7 mmol/L 26-32",
+        "value": 24.7,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato (CO3H-) 27.9 mmol/L 26-32",
+        "value": 27.9,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "BICARBONATO ESTANDAR (SBC)": {
+    "normalized_key": "BICARBONATO ESTANDAR (SBC)",
+    "original_names": [
+      "Bicarbonato Estandar (SBC)"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 26.0,
+        "max": 32.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Bicarbonato Estandar (SBC) *24.9 mmol/L 26-32",
+        "value": 24.9,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato Estandar (SBC) *25.7 mmol/L 26-32",
+        "value": 25.7,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato Estandar (SBC) *25.3 mmol/L 26-32",
+        "value": 25.3,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Bicarbonato Estandar (SBC) 26.9 mmol/L 26-32",
+        "value": 26.9,
+        "ref_min": 26.0,
+        "ref_max": 32.0,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "LACTATO": {
+    "normalized_key": "LACTATO",
+    "original_names": [
+      "Lactato"
+    ],
+    "units": [
+      "mmol/L"
+    ],
+    "ranges": [
+      {
+        "min": 0.7,
+        "max": 2.1
+      }
+    ],
+    "examples": [
+      {
+        "line": "Lactato 1.4 mmol/L 0.7-2.1",
+        "value": 1.4,
+        "ref_min": 0.7,
+        "ref_max": 2.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Lactato 1.3 mmol/L 0.7-2.1",
+        "value": 1.3,
+        "ref_min": 0.7,
+        "ref_max": 2.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Lactato 1.7 mmol/L 0.7-2.1",
+        "value": 1.7,
+        "ref_min": 0.7,
+        "ref_max": 2.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Lactato 0.9 mmol/L 0.7-2.1",
+        "value": 0.9,
+        "ref_min": 0.7,
+        "ref_max": 2.1,
+        "unit": "mmol/L"
+      },
+      {
+        "line": "Lactato 0.9 mmol/L 0.7-2.1",
+        "value": 0.9,
+        "ref_min": 0.7,
+        "ref_max": 2.1,
+        "unit": "mmol/L"
+      }
+    ]
+  },
+  "AG. PROSTÁTICO ESPECÍFICO (PSAT)": {
+    "normalized_key": "AG. PROSTÁTICO ESPECÍFICO (PSAT)",
+    "original_names": [
+      "Ag. prostático específico (PSAT)"
+    ],
+    "units": [
+      "ng/mL"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 2.5
+      }
+    ],
+    "examples": [
+      {
+        "line": "Ag. prostático específico (PSAT) 0.59 ng/mL 0-2.5espacio",
+        "value": 0.59,
+        "ref_min": 0.0,
+        "ref_max": 2.5,
+        "unit": "ng/mL"
+      }
+    ]
+  },
+  "BILIRRUBINA DIRECTA": {
+    "normalized_key": "BILIRRUBINA DIRECTA",
+    "original_names": [
+      "Bilirrubina Directa"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 0.2
+      }
+    ],
+    "examples": [
+      {
+        "line": "Bilirrubina Directa *0.34 mg/dL 0-0.2",
+        "value": 0.34,
+        "ref_min": 0.0,
+        "ref_max": 0.2,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Bilirrubina Directa *0.36 mg/dL 0-0.2",
+        "value": 0.36,
+        "ref_min": 0.0,
+        "ref_max": 0.2,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "BILIRRUBINA INDIRECTA": {
+    "normalized_key": "BILIRRUBINA INDIRECTA",
+    "original_names": [
+      "Bilirrubina Indirecta"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "examples": [
+      {
+        "line": "Bilirrubina Indirecta *1.18 mg/dL 0-1",
+        "value": 1.18,
+        "ref_min": 0.0,
+        "ref_max": 1.0,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Bilirrubina Indirecta *1.43 mg/dL 0-1",
+        "value": 1.43,
+        "ref_min": 0.0,
+        "ref_max": 1.0,
+        "unit": "mg/dL"
+      }
+    ]
+  },
+  "CALCIO CORREGIDO POR ALBÚMINA": {
+    "normalized_key": "CALCIO CORREGIDO POR ALBÚMINA",
+    "original_names": [
+      "Calcio corregido por albúmina"
+    ],
+    "units": [
+      "mg/dL"
+    ],
+    "ranges": [
+      {
+        "min": 8.8,
+        "max": 10.6
+      }
+    ],
+    "examples": [
+      {
+        "line": "Calcio corregido por albúmina 8.81 mg/dL 8.8-10.6",
+        "value": 8.81,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      },
+      {
+        "line": "Calcio corregido por albúmina 9.1 mg/dL 8.8-10.6",
+        "value": 9.1,
+        "ref_min": 8.8,
+        "ref_max": 10.6,
+        "unit": "mg/dL"
+      }
+    ]
+  }
+}
