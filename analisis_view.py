@@ -2,17 +2,17 @@
 """
 Vista de análisis de laboratorio usando tksheet.Sheet
 
-Incluye:
-- Hematología
-- Bioquímica
-- Orina (cuantitativa y cualitativa)
-
-Funciones:
-- Muestra todos los análisis fusionados por fecha de extracción.
-- Permite activar/desactivar grupos de parámetros por categoría.
-- Pinta en rojo las celdas fuera de rango según RangesManager
-  (solo para parámetros numéricos con rango definido).
+- Muestra los análisis en 4 pestañas:
+    • Hematología
+    • Bioquímica
+    • Gasometría
+    • Orina
+- Cada pestaña es una tabla tipo hoja de cálculo (Sheet).
+- La pestaña de Hematología pinta en rojo las celdas fuera de rango
+  según ranges_config.RangesManager.
 """
+
+from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
@@ -20,28 +20,52 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 import logging
 
-import ttkbootstrap as tb
 from tksheet import Sheet
 
 from ranges_config import RangesManager
-from db_manager import HematologyDB  # solo para tipado y orden de campos
+from db_manager import HematologyDB  # solo para tipado
 
 logger = logging.getLogger(__name__)
 
 
-class AnalisisView(tb.Frame):
+class AnalisisView(ttk.Frame):
     """
-    Frame que contiene:
-      - Controles de filtrado por categorías en la parte superior.
-      - Tabla central con los análisis (tksheet.Sheet).
+    Frame principal con un Notebook y 4 pestañas:
+      - Hematología
+      - Bioquímica
+      - Gasometría
+      - Orina
     """
 
-    DATE_FIELD_DB = "fecha_extraccion"
+    # Orden de campos esperados para cada tabla (según db_manager)
+    HEMA_FIELDS = [
+        "id",
+        "fecha_extraccion",
+        "numero_peticion",
+        "origen",
+        "leucocitos",
+        "neutrofilos_pct",
+        "linfocitos_pct",
+        "monocitos_pct",
+        "eosinofilos_pct",
+        "basofilos_pct",
+        "neutrofilos_abs",
+        "linfocitos_abs",
+        "monocitos_abs",
+        "eosinofilos_abs",
+        "basofilos_abs",
+        "hematies",
+        "hemoglobina",
+        "hematocrito",
+        "vcm",
+        "hcm",
+        "chcm",
+        "rdw",
+        "plaquetas",
+        "vpm",
+    ]
 
-    # Orden de campos según las funciones de db_manager
-    HEMATO_FIELDS = HematologyDB.DB_FIELDS_ORDER
-
-    BIO_FIELDS = [
+    BIOQ_FIELDS = [
         "id",
         "fecha_extraccion",
         "numero_peticion",
@@ -87,158 +111,130 @@ class AnalisisView(tb.Frame):
         "albumina_ur",
     ]
 
-    # Definición de categorías y campos (nombre interno, cabecera)
-    # OJO: algunos campos de orina cualitativa se renombran como orina_* para no
-    # pisar nombres de bioquímica (por ejemplo glucosa).
-    CATEGORIES = {
-        "Metadatos": [
-            ("numero_peticion", "Nº petición"),
-            ("origen", "Origen"),
-        ],
+    # Mapeo a cabeceras legibles
+    HEMA_HEADERS = {
+        "fecha_extraccion": "Fecha",
+        "numero_peticion": "Nº petición",
+        "origen": "Origen",
+        "leucocitos": "Leucocitos (10³/µL)",
+        "neutrofilos_pct": "Neutrófilos %",
+        "linfocitos_pct": "Linfocitos %",
+        "monocitos_pct": "Monocitos %",
+        "eosinofilos_pct": "Eosinófilos %",
+        "basofilos_pct": "Basófilos %",
+        "neutrofilos_abs": "Neutrófilos abs (10³/µL)",
+        "linfocitos_abs": "Linfocitos abs (10³/µL)",
+        "monocitos_abs": "Monocitos abs (10³/µL)",
+        "eosinofilos_abs": "Eosinófilos abs (10³/µL)",
+        "basofilos_abs": "Basófilos abs (10³/µL)",
+        "hematies": "Hematíes (10⁶/µL)",
+        "hemoglobina": "Hemoglobina (g/dL)",
+        "hematocrito": "Hematocrito (%)",
+        "vcm": "VCM (fL)",
+        "hcm": "HCM (pg)",
+        "chcm": "CHCM (g/dL)",
+        "rdw": "RDW (%)",
+        "plaquetas": "Plaquetas (10³/µL)",
+        "vpm": "VPM (fL)",
+    }
 
-        # --- Hematología ---
-        "Hemograma básico": [
-            ("leucocitos", "Leucocitos"),
-            ("hematies", "Hematíes"),
-            ("hemoglobina", "Hemoglobina"),
-            ("hematocrito", "Hematocrito"),
-            ("vcm", "VCM"),
-            ("hcm", "HCM"),
-            ("chcm", "CHCM"),
-            ("rdw", "RDW"),
-            ("plaquetas", "Plaquetas"),
-        ],
-        "Fórmula leucocitaria (%)": [
-            ("neutrofilos_pct", "Neutrófilos (%)"),
-            ("linfocitos_pct", "Linfocitos (%)"),
-            ("monocitos_pct", "Monocitos (%)"),
-            ("eosinofilos_pct", "Eosinófilos (%)"),
-            ("basofilos_pct", "Basófilos (%)"),
-        ],
-        "Fórmula leucocitaria (abs)": [
-            ("neutrofilos_abs", "Neutrófilos (abs)"),
-            ("linfocitos_abs", "Linfocitos (abs)"),
-            ("monocitos_abs", "Monocitos (abs)"),
-            ("eosinofilos_abs", "Eosinófilos (abs)"),
-            ("basofilos_abs", "Basófilos (abs)"),
-        ],
-        "Serie plaquetar": [
-            ("vpm", "VPM"),
-        ],
+    BIOQ_HEADERS = {
+        "fecha_extraccion": "Fecha",
+        "numero_peticion": "Nº petición",
+        "glucosa": "Glucosa",
+        "urea": "Urea",
+        "creatinina": "Creatinina",
+        "sodio": "Sodio",
+        "potasio": "Potasio",
+        "cloro": "Cloro",
+        "calcio": "Calcio",
+        "fosforo": "Fósforo",
+        "colesterol_total": "Colesterol total",
+        "colesterol_hdl": "Colesterol HDL",
+        "colesterol_ldl": "Colesterol LDL",
+        "colesterol_no_hdl": "Colesterol no HDL",
+        "trigliceridos": "Triglicéridos",
+        "indice_riesgo": "Índice riesgo",
+        "hierro": "Hierro",
+        "ferritina": "Ferritina",
+        "vitamina_b12": "Vitamina B12",
+    }
 
-        # --- Bioquímica ---
-        "Bioquímica básica": [
-            ("glucosa", "Glucosa"),
-            ("urea", "Urea"),
-            ("creatinina", "Creatinina"),
-        ],
-        "Electrolitos": [
-            ("sodio", "Sodio"),
-            ("potasio", "Potasio"),
-            ("cloro", "Cloro"),
-            ("calcio", "Calcio"),
-            ("fosforo", "Fósforo"),
-        ],
-        "Perfil lipídico": [
-            ("colesterol_total", "Colesterol total"),
-            ("colesterol_hdl", "Colesterol HDL"),
-            ("colesterol_ldl", "Colesterol LDL"),
-            ("colesterol_no_hdl", "Colesterol no HDL"),
-            ("trigliceridos", "Triglicéridos"),
-            ("indice_riesgo", "Índice riesgo"),
-        ],
-        "Hierro y vitaminas": [
-            ("hierro", "Hierro"),
-            ("ferritina", "Ferritina"),
-            ("vitamina_b12", "Vitamina B12"),
-        ],
-
-        # --- Orina cuantitativa ---
-        "Orina cuantitativa": [
-            ("ph", "pH orina"),
-            ("densidad", "Densidad"),
-            ("sodio_ur", "Sodio orina"),
-            ("creatinina_ur", "Creatinina orina"),
-            ("indice_albumina_creatinina", "Índice Alb/Cre"),
-            ("albumina_ur", "Albúmina orina"),
-        ],
-
-        # --- Orina cualitativa (texto) ---
-        "Orina cualitativa": [
-            ("orina_color", "Color"),
-            ("orina_aspecto", "Aspecto"),
-            ("orina_glucosa", "Glucosa (tira)"),
-            ("orina_proteinas", "Proteínas (tira)"),
-            ("orina_cuerpos_cetonicos", "Cuerpos cetónicos"),
-            ("orina_sangre", "Sangre"),
-            ("orina_nitritos", "Nitritos"),
-            ("orina_leucocitos_ests", "Leucocitos est."),
-            ("orina_bilirrubina", "Bilirrubina"),
-            ("orina_urobilinogeno", "Urobilinógeno"),
-            ("orina_categoria_albuminuria", "Categoría albuminuria"),
-        ],
+    ORINA_HEADERS = {
+        "fecha_extraccion": "Fecha",
+        "numero_peticion": "Nº petición",
+        "color": "Color",
+        "aspecto": "Aspecto",
+        "ph": "pH",
+        "densidad": "Densidad",
+        "glucosa": "Glucosa (tira)",
+        "proteinas": "Proteínas",
+        "cuerpos_cetonicos": "Cuerpos cetónicos",
+        "sangre": "Sangre",
+        "nitritos": "Nitritos",
+        "leucocitos_ests": "Leucocitos est.",
+        "bilirrubina": "Bilirrubina",
+        "urobilinogeno": "Urobilinógeno",
+        "sodio_ur": "Sodio orina",
+        "creatinina_ur": "Creatinina orina",
+        "indice_albumina_creatinina": "Índice Alb/Cre",
+        "categoria_albuminuria": "Cat. albuminuria",
+        "albumina_ur": "Albúmina orina",
     }
 
     def __init__(
         self,
         master,
-        db: HematologyDB = None,
+        db: Optional[HematologyDB] = None,
         ranges_manager: Optional[RangesManager] = None,
         **kwargs,
     ):
         super().__init__(master, **kwargs)
 
-        self.db: HematologyDB = db
+        self.db: Optional[HematologyDB] = db
         self.ranges_manager: Optional[RangesManager] = ranges_manager
-        self._rows_cache: List[Dict[str, Any]] = []
 
-        # ====== FRAME SUPERIOR: CONTROLES DE CATEGORÍAS ======
-        self.filters_frame = ttk.Frame(self)
-        self.filters_frame.pack(side="top", fill="x", padx=5, pady=5)
+        # Notebook con pestañas
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill="both", expand=True)
 
-        ttk.Label(
-            self.filters_frame,
-            text="Categorías a mostrar:",
-            font=("Segoe UI", 9, "bold"),
-        ).pack(side="left", padx=(0, 10))
+        # ---- Pestaña Hematología ----
+        self.tab_hema = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_hema, text="Hematología")
 
-        self.category_vars: Dict[str, tk.BooleanVar] = {}
-        for cat_name in self.CATEGORIES.keys():
-            var = tk.BooleanVar(value=True)  # por defecto todas activas
-            chk = ttk.Checkbutton(
-                self.filters_frame,
-                text=cat_name,
-                variable=var,
-                command=self.refresh,
-            )
-            chk.pack(side="left", padx=5)
-            self.category_vars[cat_name] = var
+        self.sheet_hema = self._create_sheet(self.tab_hema)
 
-        ttk.Button(
-            self.filters_frame,
-            text="Marcar todo",
-            command=self._select_all_categories,
-        ).pack(side="left", padx=(15, 5))
+        # ---- Pestaña Bioquímica ----
+        self.tab_bioq = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_bioq, text="Bioquímica")
 
-        ttk.Button(
-            self.filters_frame,
-            text="Desmarcar todo",
-            command=self._unselect_all_categories,
-        ).pack(side="left", padx=5)
+        self.sheet_bioq = self._create_sheet(self.tab_bioq)
 
-        # ====== FRAME CENTRAL: TABLA (tksheet.Sheet) ======
-        table_container = ttk.Frame(self)
-        table_container.pack(fill="both", expand=True, padx=5, pady=(0, 5))
+        # ---- Pestaña Gasometría ----
+        self.tab_gaso = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_gaso, text="Gasometría")
 
-        self.sheet = Sheet(
-            table_container,
+        self.sheet_gaso = self._create_sheet(self.tab_gaso)
+
+        # ---- Pestaña Orina ----
+        self.tab_orina = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_orina, text="Orina")
+
+        self.sheet_orina = self._create_sheet(self.tab_orina)
+
+    # ============================================================
+    #   Fabricación de Sheet
+    # ============================================================
+    def _create_sheet(self, parent) -> Sheet:
+        sheet = Sheet(
+            parent,
             data=[],
             headers=[],
             show_row_index=False,
             show_x_scrollbar=True,
             show_y_scrollbar=True,
         )
-        self.sheet.enable_bindings(
+        sheet.enable_bindings(
             (
                 "single_select",
                 "row_select",
@@ -250,129 +246,262 @@ class AnalisisView(tb.Frame):
                 "copy",
             )
         )
-        self.sheet.pack(fill="both", expand=True)
+        sheet.pack(fill="both", expand=True)
+        return sheet
 
-    # ======================
-    #   API PÚBLICA
-    # ======================
+    # ============================================================
+    #   API pública
+    # ============================================================
     def set_db(self, db: HematologyDB):
         self.db = db
 
     def set_ranges_manager(self, ranges_manager: RangesManager):
         self.ranges_manager = ranges_manager
-        self.refresh()
 
     def clear(self):
-        self._rows_cache = []
-        self.sheet.set_sheet_data(data=[])
-        self.sheet.headers([])
+        """Limpia todas las pestañas."""
+        for sheet in (self.sheet_hema, self.sheet_bioq, self.sheet_gaso, self.sheet_orina):
+            sheet.set_sheet_data([])
+            sheet.headers([])
 
     def refresh(self):
         """
-        Recarga los datos desde la BD, fusiona hematología, bioquímica y orina
-        por fecha, y reconstruye la tabla según las categorías activas.
+        Recarga los datos de la BD en todas las pestañas.
         """
-        logger.debug("AnalisisView.refresh() llamado")
+        logger.debug("AnalisisView.refresh()")
 
-        self._rows_cache = self._fetch_rows_from_db()
-        logger.debug("Filas fusionadas obtenidas: %d", len(self._rows_cache))
-
-        if not self._rows_cache:
+        if self.db is None or not getattr(self.db, "is_open", False):
             self.clear()
             return
 
-        columns_spec = self._build_columns_spec()
-        headers = [header for _field, header in columns_spec]
+        self._refresh_hematologia()
+        self._refresh_bioquimica()
+        self._refresh_gasometria()
+        self._refresh_orina()
+
+    # ============================================================
+    #   Hematología
+    # ============================================================
+    def _refresh_hematologia(self):
+        rows = self._get_rows_generic(
+            list_method_name="list_hematologia",
+            fallback_name="list_analyses",  # compatibilidad con versiones antiguas
+            fields_order=self.HEMA_FIELDS,
+        )
+
+        if not rows:
+            self.sheet_hema.set_sheet_data([])
+            self.sheet_hema.headers([])
+            return
+
+        # No mostramos el ID en la tabla
+        fields = self.HEMA_FIELDS[1:]
+        headers = [self.HEMA_HEADERS.get(f, f) for f in fields]
 
         data: List[List[Any]] = []
-        for row in self._rows_cache:
-            values = []
-            for field_name, _header in columns_spec:
-                values.append(row.get(field_name, ""))
-            data.append(values)
+        for row in rows:
+            data.append([row.get(f, "") for f in fields])
 
-        # Cargar en la hoja
-        self.sheet.set_sheet_data(
+        self.sheet_hema.set_sheet_data(
             data=data,
             reset_col_positions=True,
             reset_row_positions=True,
             redraw=True,
         )
-        self.sheet.headers(headers)
+        self.sheet_hema.headers(headers)
 
-        # Ancho columnas
-        for col_index in range(len(headers)):
-            if col_index in (0, 1, 2):
-                self.sheet.column_width(column=col_index, width=120)
+        # Ajuste de anchura básica
+        for i in range(len(headers)):
+            if i == 0:
+                self.sheet_hema.column_width(i, 110)  # fecha
             else:
-                self.sheet.column_width(column=col_index, width=90)
+                self.sheet_hema.column_width(i, 90)
 
-        # Eliminar resaltados previos
+        # Quitar resaltados previos
         try:
-            self.sheet.highlight_cells(cells="all", bg=None, fg=None, redraw=False)
+            self.sheet_hema.highlight_cells(cells="all", bg=None, fg=None, redraw=False)
         except Exception:
             pass
 
-        # Resaltar fuera de rango (solo numéricos con rango definido)
-        for r_idx, row_values in enumerate(data):
-            for c_idx, cell_value in enumerate(row_values):
-                field_name, _ = columns_spec[c_idx]
-                if self._is_out_of_range(field_name, cell_value):
-                    self.sheet.highlight_cells(
-                        row=r_idx,
-                        column=c_idx,
-                        bg="#ffdddd",
-                        fg="red",
-                        redraw=False,
-                    )
+        # Pintar fuera de rango
+        self._apply_out_of_range_highlight(self.sheet_hema, rows, fields)
 
-        self.sheet.redraw()
+        self.sheet_hema.redraw()
 
-    # ======================
-    #   MÉTODOS INTERNOS
-    # ======================
-    def _select_all_categories(self):
-        for var in self.category_vars.values():
-            var.set(True)
-        self.refresh()
+    # ============================================================
+    #   Bioquímica
+    # ============================================================
+    def _refresh_bioquimica(self):
+        if not hasattr(self.db, "list_bioquimica"):
+            self.sheet_bioq.set_sheet_data([])
+            self.sheet_bioq.headers([])
+            return
 
-    def _unselect_all_categories(self):
-        for var in self.category_vars.values():
-            var.set(False)
-        self.refresh()
+        rows = self._get_rows_generic(
+            list_method_name="list_bioquimica",
+            fallback_name=None,
+            fields_order=self.BIOQ_FIELDS,
+        )
 
-    def _fetch_rows_from_db(self) -> List[Dict[str, Any]]:
+        if not rows:
+            self.sheet_bioq.set_sheet_data([])
+            self.sheet_bioq.headers([])
+            return
+
+        fields = self.BIOQ_FIELDS[1:]  # sin id
+        headers = [self.BIOQ_HEADERS.get(f, f) for f in fields]
+
+        data: List[List[Any]] = []
+        for row in rows:
+            data.append([row.get(f, "") for f in fields])
+
+        self.sheet_bioq.set_sheet_data(
+            data=data,
+            reset_col_positions=True,
+            reset_row_positions=True,
+            redraw=True,
+        )
+        self.sheet_bioq.headers(headers)
+
+        for i in range(len(headers)):
+            if i == 0:
+                self.sheet_bioq.column_width(i, 110)
+            else:
+                self.sheet_bioq.column_width(i, 90)
+
+        self.sheet_bioq.redraw()
+
+    # ============================================================
+    #   Gasometría
+    # ============================================================
+    def _refresh_gasometria(self):
         """
-        Obtiene las filas de análisis desde la BD.
-
-        Si HematologyDB ofrece list_combined_analyses(), usamos esa vista
-        combinada (hematología + bioquímica + orina). En caso contrario,
-        se hace un fallback al comportamiento antiguo (solo hematología).
+        La implementación depende de si existe list_gasometria en la BD.
+        Si aún no se ha creado la tabla de gasometría, se deja vacía.
         """
-        if self.db is None or not getattr(self.db, "is_open", False):
+        if not hasattr(self.db, "list_gasometria"):
+            self.sheet_gaso.set_sheet_data([])
+            self.sheet_gaso.headers(["(No hay tabla de gasometría configurada)"])
+            return
+
+        rows = self.db.list_gasometria(limit=1000)
+
+        if not rows:
+            self.sheet_gaso.set_sheet_data([])
+            self.sheet_gaso.headers([])
+            return
+
+        # Si db_manager devuelve dicts, usamos claves; si devuelve tuplas
+        # sería necesario definir un orden; para simplificar, asumimos dicts.
+        first = rows[0]
+        if isinstance(first, dict):
+            fields = [k for k in first.keys() if k != "id"]
+            headers = [k for k in fields]
+            data = [[r.get(f, "") for f in fields] for r in rows]
+        else:
+            # Si son tuplas, no sabemos el orden exacto -> mostramos tal cual
+            headers = [f"C{i}" for i in range(len(first))]
+            data = [list(t) for t in rows]
+
+        self.sheet_gaso.set_sheet_data(
+            data=data,
+            reset_col_positions=True,
+            reset_row_positions=True,
+            redraw=True,
+        )
+        self.sheet_gaso.headers(headers)
+        self.sheet_gaso.redraw()
+
+    # ============================================================
+    #   Orina
+    # ============================================================
+    def _refresh_orina(self):
+        if not hasattr(self.db, "list_orina"):
+            self.sheet_orina.set_sheet_data([])
+            self.sheet_orina.headers([])
+            return
+
+        rows = self._get_rows_generic(
+            list_method_name="list_orina",
+            fallback_name=None,
+            fields_order=self.ORINA_FIELDS,
+        )
+
+        if not rows:
+            self.sheet_orina.set_sheet_data([])
+            self.sheet_orina.headers([])
+            return
+
+        fields = self.ORINA_FIELDS[1:]  # sin id
+        headers = [self.ORINA_HEADERS.get(f, f) for f in fields]
+
+        data: List[List[Any]] = []
+        for row in rows:
+            data.append([row.get(f, "") for f in fields])
+
+        self.sheet_orina.set_sheet_data(
+            data=data,
+            reset_col_positions=True,
+            reset_row_positions=True,
+            redraw=True,
+        )
+        self.sheet_orina.headers(headers)
+
+        for i in range(len(headers)):
+            if i == 0:
+                self.sheet_orina.column_width(i, 110)
+            else:
+                self.sheet_orina.column_width(i, 90)
+
+        self.sheet_orina.redraw()
+
+    # ============================================================
+    #   Utilidades comunes
+    # ============================================================
+    def _get_rows_generic(
+        self,
+        list_method_name: str,
+        fallback_name: Optional[str],
+        fields_order: List[str],
+    ) -> List[Dict[str, Any]]:
+        """
+        Llama a db.<list_method_name>(limit=1000) o al fallback si existe,
+        y convierte las filas a dicts con las claves de fields_order.
+        Ordena por fecha_extraccion si existe.
+        """
+        if self.db is None:
             return []
 
-        # Nueva ruta: vista combinada
-        if hasattr(self.db, "list_combined_analyses"):
-            rows = self.db.list_combined_analyses(limit=1000)
+        method = getattr(self.db, list_method_name, None)
+        if method is None and fallback_name:
+            method = getattr(self.db, fallback_name, None)
+
+        if method is None:
+            return []
+
+        tuples_or_dicts = method(limit=1000)
+        if not tuples_or_dicts:
+            return []
+
+        rows: List[Dict[str, Any]] = []
+
+        first = tuples_or_dicts[0]
+        if isinstance(first, dict):
+            # Ya vienen como dicts
+            for r in tuples_or_dicts:
+                rows.append(dict(r))
         else:
-            # Compatibilidad antigua: solo tabla hematologia
-            if not hasattr(self.db, "list_analyses"):
-                return []
-            tuples = self.db.list_analyses(limit=1000)
-            rows = []
-            for t in tuples:
-                if len(t) != len(self.DB_FIELDS_ORDER):
+            # Tuplas: las mapeamos usando fields_order
+            for t in tuples_or_dicts:
+                # Si el len no coincide, ignoramos
+                if len(t) != len(fields_order):
                     continue
-                row = {
-                    field: value
-                    for field, value in zip(self.DB_FIELDS_ORDER, t)
-                }
+                row = {field: value for field, value in zip(fields_order, t)}
                 rows.append(row)
 
-        # Ordenar por fecha_extraccion (texto ISO "YYYY-MM-DD")
+        # Ordenar por fecha_extraccion si existe
         def parse_fecha(r: Dict[str, Any]):
-            value = r.get(self.DATE_FIELD_DB, "")
+            value = r.get("fecha_extraccion") or r.get("fecha_analisis") or ""
             if not value:
                 return datetime.min
             try:
@@ -383,57 +512,50 @@ class AnalisisView(tb.Frame):
         rows.sort(key=parse_fecha)
         return rows
 
-    def _build_columns_spec(self) -> List[tuple]:
+    def _apply_out_of_range_highlight(
+        self,
+        sheet: Sheet,
+        rows: List[Dict[str, Any]],
+        fields: List[str],
+    ):
         """
-        Construye la lista de columnas (field_name, header_text) a mostrar,
-        según las categorías activas y los campos realmente disponibles.
-        """
-        if not self._rows_cache:
-            return [(self.DATE_FIELD_DB, "Fecha")]
-
-        available_fields = set()
-        for row in self._rows_cache:
-            available_fields.update(row.keys())
-
-        columns = []
-
-        # Fecha siempre al principio
-        if self.DATE_FIELD_DB in available_fields:
-            columns.append((self.DATE_FIELD_DB, "Fecha"))
-        seen_fields = {f for f, _ in columns}
-
-        # Categorías activas
-        active_cats = [
-            cat_name for cat_name, var in self.category_vars.items() if var.get()
-        ]
-
-        for cat_name in active_cats:
-            for field_name, header_text in self.CATEGORIES.get(cat_name, []):
-                if field_name in available_fields and field_name not in seen_fields:
-                    columns.append((field_name, header_text))
-                    seen_fields.add(field_name)
-
-        # Si no hay nada salvo la fecha, añadimos algunos básicos
-        if len(columns) <= 1:
-            for fallback in [
-                ("leucocitos", "Leucocitos"),
-                ("hemoglobina", "Hemoglobina"),
-                ("plaquetas", "Plaquetas"),
-                ("glucosa", "Glucosa"),
-            ]:
-                field_name, header_text = fallback
-                if field_name in available_fields and field_name not in seen_fields:
-                    columns.append((field_name, header_text))
-                    seen_fields.add(field_name)
-
-        return columns
-
-    def _is_out_of_range(self, field: str, value) -> bool:
-        """
-        Devuelve True si el valor está fuera de rango según ranges_manager.
-        Solo aplica a campos numéricos con rango definido.
+        Aplica coloreado de celdas fuera de rango SOLO en la pestaña
+        de Hematología (aunque técnicamente podría reutilizarse en otras).
         """
         if self.ranges_manager is None:
+            return
+
+        ranges = self.ranges_manager.get_all()
+
+        for r_idx, row in enumerate(rows):
+            for c_idx, field_name in enumerate(fields):
+                if field_name not in ranges:
+                    continue
+
+                value = row.get(field_name)
+                if self._is_out_of_range(field_name, value, ranges):
+                    try:
+                        sheet.highlight_cells(
+                            row=r_idx,
+                            column=c_idx,
+                            bg="#ffdddd",
+                            fg="red",
+                            redraw=False,
+                        )
+                    except Exception:
+                        pass
+
+    def _is_out_of_range(
+        self,
+        field_name: str,
+        value: Any,
+        ranges: Dict[str, Any],
+    ) -> bool:
+        """
+        Devuelve True si value está fuera de rango para field_name.
+        """
+        param = ranges.get(field_name)
+        if not param:
             return False
 
         # Intentar convertir a float
@@ -443,11 +565,6 @@ class AnalisisView(tb.Frame):
                 return False
             val = float(text.replace(",", "."))
         except (TypeError, ValueError):
-            # Campos cualitativos, texto, etc.
-            return False
-
-        param = self.ranges_manager.get_all().get(field)
-        if not param:
             return False
 
         min_v = param.min_value
