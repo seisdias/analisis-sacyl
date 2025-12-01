@@ -14,13 +14,8 @@ Año: 2025
 import sqlite3
 from typing import Dict, Any, List, Optional, Tuple
 
-
 DB_FILE = "hematologia.db"
 
-
-# ===============================================================
-#   CLASE PRINCIPAL
-# ===============================================================
 
 class HematologyDB:
     """
@@ -36,12 +31,11 @@ class HematologyDB:
     def __init__(self, db_path: str = DB_FILE):
         self.db_path = db_path
         self.conn: Optional[sqlite3.Connection] = None
-        self.is_open = False
+        self.is_open: bool = False
 
     # ------------------------------------------------------------------
     #   APERTURA / CIERRE
     # ------------------------------------------------------------------
-
     def open(self):
         """Abre conexión y crea tablas si no existen."""
         if self.is_open:
@@ -50,19 +44,21 @@ class HematologyDB:
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
         self.is_open = True
-
         self._create_tables()
 
     def close(self):
         if self.conn and self.is_open:
             self.conn.close()
+        self.conn = None
         self.is_open = False
 
     # ------------------------------------------------------------------
     #   CREACIÓN DE TABLAS
     # ------------------------------------------------------------------
-
     def _create_tables(self):
+        if not self.conn:
+            raise RuntimeError("Conexión a BD no inicializada.")
+
         cur = self.conn.cursor()
 
         # Tabla PACIENTE (solo una fila activa)
@@ -181,31 +177,37 @@ class HematologyDB:
         self.conn.commit()
 
     # ------------------------------------------------------------------
-    #   GUARDAR DATOS DEL PACIENTE
+    #   PACIENTE
     # ------------------------------------------------------------------
-
     def save_patient(self, info: Dict[str, Any]):
         """
         Guarda o actualiza los datos del paciente (solo 1 registro).
         """
-        cur = self.conn.cursor()
+        if not self.conn:
+            raise RuntimeError("BD no abierta.")
 
+        cur = self.conn.cursor()
         cur.execute("DELETE FROM paciente")
 
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO paciente (nombre, apellidos, fecha_nacimiento, sexo, numero_historia)
             VALUES (?, ?, ?, ?, ?)
-        """, (
-            info.get("nombre"),
-            info.get("apellidos"),
-            info.get("fecha_nacimiento"),
-            info.get("sexo"),
-            info.get("numero_historia")
-        ))
+            """,
+            (
+                info.get("nombre"),
+                info.get("apellidos"),
+                info.get("fecha_nacimiento"),
+                info.get("sexo"),
+                info.get("numero_historia"),
+            ),
+        )
 
         self.conn.commit()
 
     def get_patient(self) -> Optional[Dict[str, Any]]:
+        if not self.conn:
+            return None
         cur = self.conn.cursor()
         row = cur.execute("SELECT * FROM paciente LIMIT 1").fetchone()
         return dict(row) if row else None
@@ -213,10 +215,11 @@ class HematologyDB:
     # ------------------------------------------------------------------
     #   INSERTAR SERIES
     # ------------------------------------------------------------------
-
     def insert_hematologia(self, d: Dict[str, Any]):
-        cur = self.conn.cursor()
+        if not self.conn:
+            raise RuntimeError("BD no abierta.")
 
+        cur = self.conn.cursor()
         fields = [
             "fecha_analisis", "numero_peticion", "origen",
             "leucocitos", "neutrofilos_pct", "linfocitos_pct", "monocitos_pct",
@@ -224,62 +227,71 @@ class HematologyDB:
             "neutrofilos_abs", "linfocitos_abs", "monocitos_abs",
             "eosinofilos_abs", "basofilos_abs",
             "hematies", "hemoglobina", "hematocrito", "vcm", "hcm", "chcm", "rdw",
-            "plaquetas", "vpm"
+            "plaquetas", "vpm",
         ]
-
         values = [d.get(f) for f in fields]
 
-        cur.execute(f"""
+        cur.execute(
+            f"""
             INSERT INTO hematologia ({','.join(fields)})
             VALUES ({','.join(['?']*len(fields))})
-        """, values)
-
+            """,
+            values,
+        )
         self.conn.commit()
 
     def insert_bioquimica(self, d: Dict[str, Any]):
-        cur = self.conn.cursor()
+        if not self.conn:
+            raise RuntimeError("BD no abierta.")
 
+        cur = self.conn.cursor()
         fields = [
             "fecha_analisis", "numero_peticion",
             "glucosa", "urea", "creatinina",
             "sodio", "potasio", "cloro", "calcio", "fosforo",
             "colesterol_total", "colesterol_hdl", "colesterol_ldl",
             "colesterol_no_hdl", "trigliceridos", "indice_riesgo",
-            "hierro", "ferritina", "vitamina_b12"
+            "hierro", "ferritina", "vitamina_b12",
         ]
-
         values = [d.get(f) for f in fields]
 
-        cur.execute(f"""
+        cur.execute(
+            f"""
             INSERT INTO bioquimica ({','.join(fields)})
             VALUES ({','.join(['?']*len(fields))})
-        """, values)
-
+            """,
+            values,
+        )
         self.conn.commit()
 
     def insert_gasometria(self, d: Dict[str, Any]):
-        cur = self.conn.cursor()
+        if not self.conn:
+            raise RuntimeError("BD no abierta.")
 
+        cur = self.conn.cursor()
         fields = [
             "fecha_analisis", "numero_peticion",
             "gaso_ph", "gaso_pco2", "gaso_po2", "gaso_tco2",
             "gaso_so2_calc", "gaso_so2", "gaso_p50",
             "gaso_bicarbonato", "gaso_sbc", "gaso_eb",
-            "gaso_beecf", "gaso_lactato"
+            "gaso_beecf", "gaso_lactato",
         ]
-
         values = [d.get(f) for f in fields]
 
-        cur.execute(f"""
+        cur.execute(
+            f"""
             INSERT INTO gasometria ({','.join(fields)})
             VALUES ({','.join(['?']*len(fields))})
-        """, values)
-
+            """,
+            values,
+        )
         self.conn.commit()
 
     def insert_orina(self, d: Dict[str, Any]):
-        cur = self.conn.cursor()
+        if not self.conn:
+            raise RuntimeError("BD no abierta.")
 
+        cur = self.conn.cursor()
         fields = [
             "fecha_analisis", "numero_peticion",
             "ph", "densidad",
@@ -287,43 +299,43 @@ class HematologyDB:
             "nitritos", "leucocitos_ests", "bilirrubina", "urobilinogeno",
             "sodio_ur", "creatinina_ur",
             "indice_albumina_creatinina", "albumina_ur",
-            "categoria_albuminuria"
+            "categoria_albuminuria",
         ]
-
         values = [d.get(f) for f in fields]
 
-        cur.execute(f"""
+        cur.execute(
+            f"""
             INSERT INTO orina ({','.join(fields)})
             VALUES ({','.join(['?']*len(fields))})
-        """, values)
-
+            """,
+            values,
+        )
         self.conn.commit()
 
     # ------------------------------------------------------------------
     #   CONSULTAS PARA TABLAS Y GRÁFICAS
+    #   (AHORA ACEPTAN 'limit' PARA SER COMPATIBLES CON AnalisisView)
     # ------------------------------------------------------------------
-
-    def list_hematologia(self) -> List[Dict[str, Any]]:
+    def _list_with_limit(self, table: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        if not self.conn:
+            return []
         cur = self.conn.cursor()
-        rows = cur.execute("SELECT * FROM hematologia ORDER BY fecha_analisis ASC").fetchall()
+        sql = f"SELECT * FROM {table} ORDER BY fecha_analisis ASC"
+        params: Tuple[Any, ...] = ()
+        if limit is not None:
+            sql += " LIMIT ?"
+            params = (limit,)
+        rows = cur.execute(sql, params).fetchall()
         return [dict(r) for r in rows]
 
-    def list_bioquimica(self) -> List[Dict[str, Any]]:
-        cur = self.conn.cursor()
-        rows = cur.execute("SELECT * FROM bioquimica ORDER BY fecha_analisis ASC").fetchall()
-        return [dict(r) for r in rows]
+    def list_hematologia(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        return self._list_with_limit("hematologia", limit)
 
-    def list_gasometria(self) -> List[Dict[str, Any]]:
-        cur = self.conn.cursor()
-        rows = cur.execute("SELECT * FROM gasometria ORDER BY fecha_analisis ASC").fetchall()
-        return [dict(r) for r in rows]
+    def list_bioquimica(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        return self._list_with_limit("bioquimica", limit)
 
-    def list_orina(self) -> List[Dict[str, Any]]:
-        cur = self.conn.cursor()
-        rows = cur.execute("SELECT * FROM orina ORDER BY fecha_analisis ASC").fetchall()
-        return [dict(r) for r in rows]
+    def list_gasometria(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        return self._list_with_limit("gasometria", limit)
 
-
-# ===============================================================
-#   FIN DEL MÓDULO
-# ===============================================================
+    def list_orina(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        return self._list_with_limit("orina", limit)
