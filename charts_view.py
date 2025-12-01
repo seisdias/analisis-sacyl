@@ -276,7 +276,7 @@ class ChartsView(ttk.Frame):
             ax = fig.add_subplot(111)
 
             # Usamos fechas reales en el eje X
-            ax.plot_date(list(fechas_clean), list(valores_clean), "-o", linestyle="-")
+            ax.plot_date(list(fechas_clean), list(valores_clean), marker="o", linestyle="-")
 
             # Formato de fechas
             ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d"))
