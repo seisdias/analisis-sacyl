@@ -343,135 +343,44 @@ class AnalisisView(tb.Frame):
 
     def _fetch_rows_from_db(self) -> List[Dict[str, Any]]:
         """
-        Fusiona los datos de:
-          - hematología (hematologia)
-          - bioquímica (bioquimica)
-          - orina (orina)
-        por fecha_extraccion, devolviendo una lista de dicts.
+        Obtiene las filas de análisis desde la BD.
+
+        Si HematologyDB ofrece list_combined_analyses(), usamos esa vista
+        combinada (hematología + bioquímica + orina). En caso contrario,
+        se hace un fallback al comportamiento antiguo (solo hematología).
         """
         if self.db is None or not getattr(self.db, "is_open", False):
             return []
 
-        combined: Dict[str, Dict[str, Any]] = {}
-
-        # --- Hematología ---
-        try:
-            tuples_hema = self.db.list_analyses(limit=1000)
-        except Exception:
-            tuples_hema = []
-
-        for t in tuples_hema:
-            if len(t) != len(self.HEMATO_FIELDS):
-                continue
-            row = {field: value for field, value in zip(self.HEMATO_FIELDS, t)}
-            fecha = str(row.get("fecha_extraccion") or "")
-            if not fecha:
-                continue
-
-            d = combined.setdefault(fecha, {self.DATE_FIELD_DB: fecha})
-            # No nos interesa el id en la tabla
-            row.pop("id", None)
-            d.update(row)
-
-        # --- Bioquímica ---
-        if hasattr(self.db, "list_bioquimica"):
-            try:
-                tuples_bio = self.db.list_bioquimica(limit=1000)
-            except Exception:
-                tuples_bio = []
+        # Nueva ruta: vista combinada
+        if hasattr(self.db, "list_combined_analyses"):
+            rows = self.db.list_combined_analyses(limit=1000)
         else:
-            tuples_bio = []
+            # Compatibilidad antigua: solo tabla hematologia
+            if not hasattr(self.db, "list_analyses"):
+                return []
+            tuples = self.db.list_analyses(limit=1000)
+            rows = []
+            for t in tuples:
+                if len(t) != len(self.DB_FIELDS_ORDER):
+                    continue
+                row = {
+                    field: value
+                    for field, value in zip(self.DB_FIELDS_ORDER, t)
+                }
+                rows.append(row)
 
-        for t in tuples_bio:
-            if len(t) != len(self.BIO_FIELDS):
-                continue
-            row = {field: value for field, value in zip(self.BIO_FIELDS, t)}
-            fecha = str(row.get("fecha_extraccion") or "")
-            if not fecha:
-                continue
-
-            d = combined.setdefault(fecha, {self.DATE_FIELD_DB: fecha})
-            row.pop("id", None)
-
-            # Evitamos sobreescribir numero_peticion si ya lo puso hematología
-            num_pet = row.pop("numero_peticion", None)
-            if "numero_peticion" not in d and num_pet:
-                d["numero_peticion"] = num_pet
-
-            d.update(row)
-
-        # --- Orina ---
-        if hasattr(self.db, "list_orina"):
-            try:
-                tuples_orina = self.db.list_orina(limit=1000)
-            except Exception:
-                tuples_orina = []
-        else:
-            tuples_orina = []
-
-        for t in tuples_orina:
-            if len(t) != len(self.ORINA_FIELDS):
-                continue
-            row = {field: value for field, value in zip(self.ORINA_FIELDS, t)}
-            fecha = str(row.get("fecha_extraccion") or "")
-            if not fecha:
-                continue
-
-            d = combined.setdefault(fecha, {self.DATE_FIELD_DB: fecha})
-            row.pop("id", None)
-
-            num_pet = row.pop("numero_peticion", None)
-            if "numero_peticion" not in d and num_pet:
-                d["numero_peticion"] = num_pet
-
-            # Campos cuantitativos de orina (tal cual)
-            for key in [
-                "ph",
-                "densidad",
-                "sodio_ur",
-                "creatinina_ur",
-                "indice_albumina_creatinina",
-                "albumina_ur",
-            ]:
-                if key in row:
-                    d[key] = row[key]
-
-            # Campos cualitativos -> prefijo "orina_"
-            mapping_qual = {
-                "color": "orina_color",
-                "aspecto": "orina_aspecto",
-                "glucosa": "orina_glucosa",
-                "proteinas": "orina_proteinas",
-                "cuerpos_cetonicos": "orina_cuerpos_cetonicos",
-                "sangre": "orina_sangre",
-                "nitritos": "orina_nitritos",
-                "leucocitos_ests": "orina_leucocitos_ests",
-                "bilirrubina": "orina_bilirrubina",
-                "urobilinogeno": "orina_urobilinogeno",
-                "categoria_albuminuria": "orina_categoria_albuminuria",
-            }
-            for src, dest in mapping_qual.items():
-                if src in row:
-                    d[dest] = row[src]
-
-        # Convertimos a lista y ordenamos por fecha
-        def parse_fecha(fecha_txt: str) -> datetime:
-            if not fecha_txt:
+        # Ordenar por fecha_extraccion (texto ISO "YYYY-MM-DD")
+        def parse_fecha(r: Dict[str, Any]):
+            value = r.get(self.DATE_FIELD_DB, "")
+            if not value:
                 return datetime.min
             try:
-                return datetime.strptime(fecha_txt, "%Y-%m-%d")
+                return datetime.strptime(str(value), "%Y-%m-%d")
             except ValueError:
                 return datetime.min
 
-        rows = []
-        for fecha, d in combined.items():
-            d = dict(d)
-            d["_fecha_dt"] = parse_fecha(fecha)
-            rows.append(d)
-
-        rows.sort(key=lambda r: r["_fecha_dt"])
-        for r in rows:
-            r.pop("_fecha_dt", None)
+        rows.sort(key=parse_fecha)
         return rows
 
     def _build_columns_spec(self) -> List[tuple]:
