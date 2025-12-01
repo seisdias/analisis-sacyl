@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Conversor de informes PDF del HURH a JSON estructurado para análisis:
-
-- Hematología
-- Bioquímica
-- Gasometría
-- Orina
-- Metadatos del paciente
+Conversor de informes PDF de laboratorio a JSON de análisis de hematología,
+bioquímica, gasometría y orina.
 
 Autor: Borja Alonso Tristán
 Año: 2025
 """
+
+from __future__ import annotations
 
 import re
 import json
@@ -21,76 +18,102 @@ from typing import Dict, Any, Optional
 from PyPDF2 import PdfReader
 
 
-# ================================================================
-#  UTILIDADES GENERALES
-# ================================================================
+# ============================================================
+#   UTILIDADES GENERALES
+# ============================================================
 
 def _extract_text_from_pdf(pdf_path: str) -> str:
-    """Extrae todo el texto de un PDF como una única cadena."""
+    """Extrae todo el texto de un PDF en una sola cadena."""
     reader = PdfReader(pdf_path)
     chunks = []
     for page in reader.pages:
-        content = page.extract_text() or ""
-        chunks.append(content)
+        txt = page.extract_text() or ""
+        chunks.append(txt)
     return "\n".join(chunks)
 
 
-def _to_float(txt: Optional[str]) -> Optional[float]:
-    if not txt:
+def _extract_float(pattern: str, texto: str) -> Optional[float]:
+    """
+    Aplica un patrón regex y devuelve el primer grupo capturado como float.
+    Si no encuentra nada, devuelve None.
+    """
+    m = re.search(pattern, texto)
+    if not m:
         return None
-    txt = txt.replace(",", ".")
+    valor_str = m.group(1).replace(",", ".")
     try:
-        return float(txt)
+        return float(valor_str)
     except ValueError:
         return None
 
 
-def _extract_float(pattern: str, text: str) -> Optional[float]:
+def _extract_named_value(label: str, texto: str) -> Optional[float]:
     """
-    Busca un patrón que capture un número. Devuelve float o None.
+    Extrae el primer valor numérico de una línea que empieza por 'label'.
+    Ejemplo de línea:
+        Sodio 138 mmol/L 136 - 146
+    Buscamos el número inmediatamente después del nombre de la prueba.
     """
-    m = re.search(pattern, text, flags=re.IGNORECASE)
+    pattern = rf"^{re.escape(label)}\s+([0-9]+(?:[.,][0-9]+)?)\s+"
+    m = re.search(pattern, texto, flags=re.MULTILINE)
     if not m:
         return None
-    return _to_float(m.group(1))
+    valor_str = m.group(1).replace(",", ".")
+    try:
+        return float(valor_str)
+    except ValueError:
+        return None
 
 
-def _extract_token(pattern: str, text: str) -> Optional[str]:
-    m = re.search(pattern, text, flags=re.IGNORECASE)
+def _extract_token(pattern: str, texto: str) -> Optional[str]:
+    """
+    Devuelve el primer grupo capturado como texto (limpio) o None si no hay match.
+    Útil para campos cualitativos (NEGATIVO, TRAZAS, etc.)
+    """
+    m = re.search(pattern, texto, flags=re.IGNORECASE)
     if not m:
         return None
     return m.group(1).strip()
 
 
-# ================================================================
-#  METADATOS DEL PDF
-# ================================================================
+# ============================================================
+#   METADATOS DE ANÁLISIS (FECHA, PETICIÓN, ORIGEN)
+# ============================================================
 
-def _parse_fecha(text: str) -> str:
+def _parse_fecha_finalizacion(texto: str) -> str:
     """
-    Extrae 'Finalización: 07/10/25' y devuelve '2025-10-07'
+    Busca la fecha de 'Finalización: dd/mm/aa' y la convierte a 'YYYY-MM-DD'.
     """
-    m = re.search(r"Finalización:\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2})", text)
+    m = re.search(r"Finalización:\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2})", texto)
     if not m:
         raise ValueError("No se ha encontrado la fecha de Finalización en el PDF.")
-    raw = m.group(1)
-    d = datetime.strptime(raw, "%d/%m/%y")
-    return d.strftime("%Y-%m-%d")
+    fecha_str = m.group(1)  # p.ej. '8/01/25'
+    dt = datetime.strptime(fecha_str, "%d/%m/%y")
+    return dt.strftime("%Y-%m-%d")
 
 
-def _parse_numero_peticion(text: str) -> Optional[str]:
-    m = re.search(r"Nº petición:\s*([0-9A-Za-z]+)", text)
+def _parse_numero_peticion(texto: str) -> Optional[str]:
+    """
+    Extrae el 'Nº petición: XXXXX'. Devuelve None si no lo encuentra.
+    """
+    m = re.search(r"Nº petición:\s*([0-9A-Za-z]+)", texto)
     return m.group(1) if m else None
 
 
-def _parse_origen(text: str) -> Optional[str]:
-    m = re.search(r"Origen:\s*(.+)", text)
-    return m.group(1).strip() if m else None
+def _parse_origen(texto: str) -> Optional[str]:
+    """
+    Extrae el campo 'Origen: ...' en la parte del informe.
+    """
+    m = re.search(r"Origen:\s*(.+)", texto)
+    if not m:
+        return None
+    linea = m.group(1)
+    return linea.strip()
 
 
-# ================================================================
-#  DATOS DEL PACIENTE
-# ================================================================
+# ============================================================
+#   DATOS DE PACIENTE
+# ============================================================
 
 PAT_NOMBRE = re.compile(r"Nombre:\s*(.*?)\s+Nº petición:", re.S)
 PAT_APELLIDOS = re.compile(r"Apellidos:\s*(.*?)\s+Doctor:", re.S)
@@ -100,17 +123,37 @@ PAT_NHIST = re.compile(r"Nº Historia:\s*([^\n\r]+)")
 
 def _clean_historia(raw: str) -> Optional[str]:
     """
-    Solo acepta códigos tipo HURHxxxxx.
+    Normaliza y filtra el nº de historia clínico.
+
+    Reglas:
+      - Nos quedamos con la primera palabra de la línea.
+      - Solo aceptamos valores que empiecen por 'HURH'.
+      - Si no cumple el formato -> devolvemos None.
     """
     if not raw:
         return None
-    token = raw.strip().split()[0]
-    if re.match(r"^HURH[0-9A-Za-z]+$", token):
-        return token
+    first = raw.strip().split()[0]
+    first = first.strip()
+    if not first:
+        return None
+
+    # Solo aceptamos HURHxxxxx (letras/números detrás)
+    if re.match(r"^HURH[0-9A-Za-z]+$", first):
+        return first
     return None
 
 
 def _parse_patient(text: str) -> Dict[str, Any]:
+    """
+    Extrae los datos básicos del paciente a partir del texto completo del PDF.
+
+    Devuelve un dict con:
+      - nombre
+      - apellidos
+      - fecha_nacimiento (ISO YYYY-MM-DD si se puede)
+      - sexo
+      - numero_historia (solo si cumple patrón HURH...)
+    """
     nombre = apellidos = fecha_nacimiento = sexo = numero_historia = None
 
     m = PAT_NOMBRE.search(text)
@@ -123,17 +166,19 @@ def _parse_patient(text: str) -> Dict[str, Any]:
 
     m = PAT_FECHA_SEXO.search(text)
     if m:
-        raw_fecha = m.group(1).strip()
-        sexo = m.group(2)
+        raw_fecha = m.group(1).strip()  # p.ej. '23/06/1980'
+        sexo = m.group(2).strip()
         try:
-            d = datetime.strptime(raw_fecha, "%d/%m/%Y")
-            fecha_nacimiento = d.strftime("%Y-%m-%d")
-        except:
+            dt = datetime.strptime(raw_fecha, "%d/%m/%Y")
+            fecha_nacimiento = dt.strftime("%Y-%m-%d")
+        except ValueError:
+            # Si falla, dejamos el formato original
             fecha_nacimiento = raw_fecha
 
     m = PAT_NHIST.search(text)
     if m:
-        numero_historia = _clean_historia(m.group(1))
+        raw_hist = m.group(1).strip()
+        numero_historia = _clean_historia(raw_hist)
 
     return {
         "nombre": nombre,
@@ -144,195 +189,362 @@ def _parse_patient(text: str) -> Dict[str, Any]:
     }
 
 
-# ================================================================
-#  HEMATOLOGÍA
-# ================================================================
+# ============================================================
+#   HEMATOLOGÍA (HEMOGRAMA)
+# ============================================================
 
-def _parse_hematologia(text: str, fecha: str, num_pet: Optional[str]) -> Dict[str, Any]:
-    out = {
-        "fecha_analisis": fecha,
-        "numero_peticion": num_pet,
-    }
-
-    def g(pattern): return _extract_float(pattern, text)
+def _parse_hematologia(texto: str, fecha_analisis: str,
+                       numero_peticion: Optional[str],
+                       origen: Optional[str]) -> Dict[str, Any]:
+    """
+    Extrae los datos de hemograma / hematología básica.
+    Devuelve un dict (puede tener muchos campos a None si no aparecen).
+    """
 
     # --- Serie blanca ---
-    out["leucocitos"] = g(r"Leucocitos\s+\**([0-9]+[.,]?[0-9]*)")
-    out["neutrofilos_pct"] = g(r"Neutrófilos\s*%\s+\**([0-9]+[.,]?[0-9]*)")
-    out["linfocitos_pct"] = g(r"Linfocitos\s*%\s+\**([0-9]+[.,]?[0-9]*)")
-    out["monocitos_pct"] = g(r"Monocitos\s*%\s+\**([0-9]+[.,]?[0-9]*)")
-    out["eosinofilos_pct"] = g(r"Eosinófilos\s*%\s+\**([0-9]+[.,]?[0-9]*)")
-    out["basofilos_pct"] = g(r"Basófilos\s*%\s+\**([0-9]+[.,]?[0-9]*)")
+    leucocitos = _extract_float(
+        r"Leucocitos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
 
-    out["neutrofilos_abs"] = g(r"Neutrófilos\s+\**([0-9]+[.,]?[0-9]*)\s*x10\^3")
-    out["linfocitos_abs"] = g(r"Linfocitos\s+\**([0-9]+[.,]?[0-9]*)\s*x10\^3")
-    out["monocitos_abs"] = g(r"Monocitos\s+\**([0-9]+[.,]?[0-9]*)\s*x10\^3")
-    out["eosinofilos_abs"] = g(r"Eosinófilos\s+\**([0-9]+[.,]?[0-9]*)\s*x10\^3")
-    out["basofilos_abs"] = g(r"Basófilos\s+\**([0-9]+[.,]?[0-9]*)\s*x10\^3")
+    neutrofilos_pct = _extract_float(
+        r"Neutrófilos %\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
+    linfocitos_pct = _extract_float(
+        r"Linfocitos %\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
+    monocitos_pct = _extract_float(
+        r"Monocitos %\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
+    eosinofilos_pct = _extract_float(
+        r"Eosinófilos %\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
+    basofilos_pct = _extract_float(
+        r"Basófilos %\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
+
+    neutrofilos_abs = _extract_float(
+        r"Neutrófilos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
+    linfocitos_abs = _extract_float(
+        r"Linfocitos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
+    monocitos_abs = _extract_float(
+        r"Monocitos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
+    eosinofilos_abs = _extract_float(
+        r"Eosinófilos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
+    basofilos_abs = _extract_float(
+        r"Basófilos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
 
     # --- Serie roja ---
-    out["hematies"] = g(r"Hematíes\s+\**([0-9]+[.,]?[0-9]*)")
-    out["hemoglobina"] = g(r"Hemoglobina\s+\**([0-9]+[.,]?[0-9]*)")
-    out["hematocrito"] = g(r"Hematocrito\s+\**([0-9]+[.,]?[0-9]*)")
-    out["vcm"] = g(r"V\.?C\.?M\.?\s+\**([0-9]+[.,]?[0-9]*)")
-    out["hcm"] = g(r"H\.?C\.?M\.?\s+\**([0-9]+[.,]?[0-9]*)")
-    out["chcm"] = g(r"C\.?H\.?C\.?M\.?\s+\**([0-9]+[.,]?[0-9]*)")
-    out["rdw"] = g(r"R\.?D\.?W\.?\s+\**([0-9]+[.,]?[0-9]*)")
+    hematies = _extract_float(
+        r"Hematíes\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^6/µL", texto
+    )
+    hemoglobina = _extract_float(
+        r"Hemoglobina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+g/dL", texto
+    )
+    hematocrito = _extract_float(
+        r"Hematocrito\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
+    vcm = _extract_float(
+        r"V\.C\.M\s+\**([0-9]+(?:[.,][0-9]+)?)\s+fL", texto
+    )
+    hcm = _extract_float(
+        r"H\.C\.M\.\s+\**([0-9]+(?:[.,][0-9]+)?)\s+pg", texto
+    )
+    chcm = _extract_float(
+        r"C\.H\.C\.M\.\s+\**([0-9]+(?:[.,][0-9]+)?)\s+g/dL", texto
+    )
+    rdw = _extract_float(
+        r"R\.D\.W\s+\**([0-9]+(?:[.,][0-9]+)?)\s+%", texto
+    )
 
-    # --- Serie plaquetas ---
-    out["plaquetas"] = g(r"Plaquetas\s+\**([0-9]+[.,]?[0-9]*)")
-    out["vpm"] = g(r"Volumen Plaquetar Medio\s+\**([0-9]+[.,]?[0-9]*)")
+    # --- Serie plaquetar ---
+    plaquetas = _extract_float(
+        r"Plaquetas\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
+    )
+    vpm = _extract_float(
+        r"Volumen Plaquetar Medio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+fL", texto
+    )
 
-    return out
+    analisis = {
+        "fecha_analisis": fecha_analisis,
+        "numero_peticion": numero_peticion,
+        "origen": origen,
 
+        "leucocitos": leucocitos,
+        "neutrofilos_pct": neutrofilos_pct,
+        "linfocitos_pct": linfocitos_pct,
+        "monocitos_pct": monocitos_pct,
+        "eosinofilos_pct": eosinofilos_pct,
+        "basofilos_pct": basofilos_pct,
 
-# ================================================================
-#  BIOQUÍMICA
-# ================================================================
+        "neutrofilos_abs": neutrofilos_abs,
+        "linfocitos_abs": linfocitos_abs,
+        "monocitos_abs": monocitos_abs,
+        "eosinofilos_abs": eosinofilos_abs,
+        "basofilos_abs": basofilos_abs,
 
-def _parse_bioquimica(text: str, fecha: str, num_pet: Optional[str]) -> Optional[Dict[str, Any]]:
-    out = {
-        "fecha_analisis": fecha,
-        "numero_peticion": num_pet,
+        "hematies": hematies,
+        "hemoglobina": hemoglobina,
+        "hematocrito": hematocrito,
+        "vcm": vcm,
+        "hcm": hcm,
+        "chcm": chcm,
+        "rdw": rdw,
+
+        "plaquetas": plaquetas,
+        "vpm": vpm,
     }
 
-    def g(p): return _extract_float(p, text)
-
-    out.update({
-        "glucosa": g(r"Glucosa\s+\**([0-9]+[.,]?[0-9]*)"),
-        "urea": g(r"Urea\s+\**([0-9]+[.,]?[0-9]*)"),
-        "creatinina": g(r"Creatinina\s+\**([0-9]+[.,]?[0-9]*)"),
-        "sodio": g(r"Sodio\s+\**([0-9]+[.,]?[0-9]*)"),
-        "potasio": g(r"Potasio\s+\**([0-9]+[.,]?[0-9]*)"),
-        "cloro": g(r"Cloro\s+\**([0-9]+[.,]?[0-9]*)"),
-        "calcio": g(r"Calcio\s+\**([0-9]+[.,]?[0-9]*)"),
-        "fosforo": g(r"Fósforo\s+\**([0-9]+[.,]?[0-9]*)"),
-        "colesterol_total": g(r"Colesterol total\s+\**([0-9]+[.,]?[0-9]*)"),
-        "colesterol_hdl": g(r"Colesterol HDL\s+\**([0-9]+[.,]?[0-9]*)"),
-        "colesterol_ldl": g(r"Colesterol LDL\s+\**([0-9]+[.,]?[0-9]*)"),
-        "colesterol_no_hdl": g(r"Colesterol no HDL\s+\**([0-9]+[.,]?[0-9]*)"),
-        "trigliceridos": g(r"Triglicéridos\s+\**([0-9]+[.,]?[0-9]*)"),
-        "indice_riesgo": g(r"Índice riesgo\s+\**([0-9]+[.,]?[0-9]*)"),
-        "hierro": g(r"Hierro\s+\**([0-9]+[.,]?[0-9]*)"),
-        "ferritina": g(r"Ferritina\s+\**([0-9]+[.,]?[0-9]*)"),
-        "vitamina_b12": g(r"Vitamina\s+B12\s+\**([0-9]+[.,]?[0-9]*)"),
-    })
-
-    if any(v is not None for k, v in out.items() if k not in ("fecha_analisis", "numero_peticion")):
-        return out
-    return None
+    return analisis
 
 
-# ================================================================
-#  GASOMETRÍA
-# ================================================================
+# ============================================================
+#   BIOQUÍMICA + VITAMINAS
+# ============================================================
 
-def _parse_gasometria(text: str, fecha: str, num_pet: Optional[str]) -> Optional[Dict[str, Any]]:
-    out = {
-        "fecha_analisis": fecha,
-        "numero_peticion": num_pet,
+def _parse_bioquimica(texto: str, fecha_analisis: str,
+                      numero_peticion: Optional[str]) -> Optional[Dict[str, Any]]:
+    """
+    Extrae parámetros de bioquímica y vitaminas.
+    Devuelve dict o None si no encuentra nada relevante.
+    """
+    data: Dict[str, Any] = {
+        "fecha_analisis": fecha_analisis,
+        "numero_peticion": numero_peticion,
     }
 
-    def g(p): return _extract_float(p, text)
-    def t(p): return _extract_token(p, text)
+    # Valores básicos
+    data["glucosa"] = _extract_float(r"Glucosa\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["urea"] = _extract_float(r"Urea\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["creatinina"] = _extract_float(r"Creatinina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
 
-    out.update({
-        "gaso_ph": g(r"\bpH\s+\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_pco2": g(r"pCO2\s+\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_po2": g(r"pO2\s+\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_tco2": g(r"CO2 Total.*?([0-9]+[.,]?[0-9]*)"),
-        "gaso_so2_calc": t(r"Saturación de Oxígeno \(sO2\) calculada\s+([A-Za-z0-9.+-]+)"),
-        "gaso_so2": t(r"Saturación de Oxígeno \(sO2\)\s+([A-Za-z0-9.+-]+)"),
-        "gaso_p50": g(r"p50\s+\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_bicarbonato": g(r"Bicarbonato.*?\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_sbc": g(r"SBC\s+\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_eb": g(r"Exceso de Bases.*?\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_beecf": g(r"BEecf\s+\**([0-9]+[.,]?[0-9]*)"),
-        "gaso_lactato": g(r"Lactato\s+\**([0-9]+[.,]?[0-9]*)"),
-    })
+    data["sodio"] = _extract_float(r"Sodio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["potasio"] = _extract_float(r"Potasio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["cloro"] = _extract_float(r"Cloro\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["calcio"] = _extract_float(r"Calcio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["fosforo"] = _extract_float(r"Fósforo\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
 
-    if any(v is not None for k, v in out.items() if k not in ("fecha_analisis", "numero_peticion")):
-        return out
-    return None
+    data["colesterol_total"] = _extract_float(
+        r"Colesterol total\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["colesterol_hdl"] = _extract_float(
+        r"Colesterol HDL\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["colesterol_ldl"] = _extract_float(
+        r"Colesterol LDL\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["colesterol_no_hdl"] = _extract_float(
+        r"Colesterol no HDL\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["trigliceridos"] = _extract_float(
+        r"Triglicéridos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["indice_riesgo"] = _extract_float(
+        r"Índice riesgo\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+
+    data["hierro"] = _extract_float(r"Hierro\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["ferritina"] = _extract_float(r"Ferritina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["vitamina_b12"] = _extract_float(r"Vitamina\s+B12\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+
+    # ¿Hay al menos un valor numérico?
+    has_value = any(
+        v is not None for k, v in data.items()
+        if k not in ("fecha_analisis", "numero_peticion")
+    )
+    return data if has_value else None
 
 
-# ================================================================
-#  ORINA
-# ================================================================
+# ============================================================
+#   GASOMETRÍA
+# ============================================================
 
-def _parse_orina(text: str, fecha: str, num_pet: Optional[str]) -> Optional[Dict[str, Any]]:
-    out = {
-        "fecha_analisis": fecha,
-        "numero_peticion": num_pet,
+def _parse_gasometria(texto: str, fecha_analisis: str,
+                      numero_peticion: Optional[str]) -> Optional[Dict[str, Any]]:
+    """
+    Parsea la sección de GASOMETRÍA (venosa/arterial) y devuelve un dict
+    plano con los valores numéricos o None si no hay nada.
+    """
+    data: Dict[str, Any] = {
+        "fecha_analisis": fecha_analisis,
+        "numero_peticion": numero_peticion,
     }
 
-    def g(p): return _extract_float(p, text)
-    def t(p): return _extract_token(p, text)
+    data["gaso_ph"] = _extract_named_value("pH", texto)
+    data["gaso_pco2"] = _extract_named_value("pCO2", texto)
+    data["gaso_po2"] = _extract_named_value("pO2", texto)
+    data["gaso_tco2"] = _extract_named_value("CO2 Total (TCO2)", texto)
+
+    data["gaso_so2_calc"] = _extract_named_value(
+        "Saturación de Oxígeno (sO2) calculada", texto
+    )
+    data["gaso_so2"] = _extract_named_value(
+        "Saturación de Oxígeno (sO2)", texto
+    )
+
+    data["gaso_p50"] = _extract_named_value("p50", texto)
+    data["gaso_bicarbonato"] = _extract_named_value("Bicarbonato (CO3H-)", texto)
+    data["gaso_sbc"] = _extract_named_value("Bicarbonato Estandar (SBC)", texto)
+    data["gaso_eb"] = _extract_named_value("Exceso de Bases (EB)", texto)
+    data["gaso_beecf"] = _extract_named_value(
+        "E. de bases en fluido extracelular (BEecf)", texto
+    )
+    data["gaso_lactato"] = _extract_named_value("Lactato", texto)
+
+    has_value = any(
+        v is not None for k, v in data.items()
+        if k not in ("fecha_analisis", "numero_peticion")
+    )
+    return data if has_value else None
+
+
+# ============================================================
+#   ORINA / URINOANÁLISIS
+# ============================================================
+
+def _parse_orina(texto: str, fecha_analisis: str,
+                 numero_peticion: Optional[str]) -> Optional[Dict[str, Any]]:
+    """
+    Extrae parámetros de orina / urinoanálisis.
+    Devuelve dict o None si no encuentra nada relevante.
+    """
+    data: Dict[str, Any] = {
+        "fecha_analisis": fecha_analisis,
+        "numero_peticion": numero_peticion,
+    }
 
     # Físico-químico
-    out["orina_ph"] = g(r"\bpH\s+\**([0-9]+[.,]?[0-9]*)")
-    out["orina_densidad"] = g(r"Densidad\s+\**([0-9]+[.,]?[0-9]*)")
+    data["ph"] = _extract_float(r"\bpH\s+\**([0-9]+(?:[.,][0-9]+)?)\s*", texto)
+    data["densidad"] = _extract_float(r"Densidad\s+\**([0-9]+(?:[.,][0-9]+)?)\s*", texto)
 
-    # Tiras
-    out["proteinas"] = t(r"Prote[ií]nas\s+\**([A-Za-z+]+)")
-    out["glucosa_orina"] = t(r"Glucosa\s+\**([A-Za-z+]+)")
-    out["sangre"] = t(r"Sangre\s+\**([A-Za-z+]+)")
-    out["nitritos"] = t(r"Nitritos\s+\**([A-Za-z+]+)")
-    out["leucocitos_ests"] = t(r"Leucocitos esterasas?\s+\**([A-Za-z+]+)")
-    out["bilirrubina"] = t(r"Bilirrubina\s+\**([A-Za-z+]+)")
-    out["urobilinogeno"] = t(r"Urobilin[oó]geno\s+\**([A-Za-z+]+)")
+    # Tiras / cualitativos (NEGATIVO, TRAZAS, +, etc.)
+    data["glucosa"] = _extract_token(r"Glucosa\s+\**([A-Za-z+]+)", texto)
+    data["proteinas"] = _extract_token(r"Proteínas\s+\**([A-Za-z+]+)", texto)
+    data["cuerpos_cetonicos"] = _extract_token(r"Cuerpos cetónicos\s+\**([A-Za-z+]+)", texto)
+    data["sangre"] = _extract_token(r"Sangre\s+\**([A-Za-z+]+)", texto)
+    data["nitritos"] = _extract_token(r"Nitritos\s+\**([A-Za-z+]+)", texto)
+    data["leucocitos_ests"] = _extract_token(r"Leucocitos esterasas?\s+\**([A-Za-z+]+)", texto)
+    data["bilirrubina"] = _extract_token(r"Bilirrubina\s+\**([A-Za-z+]+)", texto)
+    data["urobilinogeno"] = _extract_token(r"Urobilinógeno\s+\**([A-Za-z+]+)", texto)
 
-    # Cuantitativos
-    out["sodio_ur"] = g(r"Sodio.*?orina.*?\**([0-9]+[.,]?[0-9]*)")
-    out["creatinina_ur"] = g(r"Creatinina.*?orina.*?\**([0-9]+[.,]?[0-9]*)")
-    out["indice_albumina_creatinina"] = g(r"Índice\s+Alb/Cre\s+\**([0-9]+[.,]?[0-9]*)")
-    out["albumina_ur"] = g(r"Albúmina.*?orina.*?\**([0-9]+[.,]?[0-9]*)")
+    # Cuantitativos de orina (si los hubiera)
+    data["sodio_ur"] = _extract_float(r"Sodio\s+orina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["creatinina_ur"] = _extract_float(r"Creatinina\s+orina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["indice_albumina_creatinina"] = _extract_float(
+        r"Índice\s+Alb/Cre\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["albumina_ur"] = _extract_float(
+        r"Albúmina\s+orina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["categoria_albuminuria"] = _extract_token(
+        r"Categoría\s+albuminuria\s+\**([A-Za-z0-9 ]+)", texto
+    )
 
-    if any(v is not None for k, v in out.items() if k not in ("fecha_analisis", "numero_peticion")):
-        return out
-    return None
+    # ¿Hay al menos algo informado?
+    has_value = any(
+        v is not None for k, v in data.items()
+        if k not in ("fecha_analisis", "numero_peticion")
+    )
+    return data if has_value else None
 
 
-# ================================================================
-#  PARSE PDF COMPLETO
-# ================================================================
+# ============================================================
+#   FUNCIÓN PRINCIPAL
+# ============================================================
 
 def parse_hematology_pdf(pdf_path: str) -> Dict[str, Any]:
-    text = _extract_text_from_pdf(pdf_path)
+    """
+    Parsea un informe PDF de laboratorio y devuelve un dict con formato:
 
-    paciente = _parse_patient(text)
-    fecha = _parse_fecha(text)
-    num_pet = _parse_numero_peticion(text)
-    origen = _parse_origen(text)
-
-    hema = _parse_hematologia(text, fecha, num_pet)
-    hema["origen"] = origen
-
-    bio = _parse_bioquimica(text, fecha, num_pet)
-    gas = _parse_gasometria(text, fecha, num_pet)
-    ori = _parse_orina(text, fecha, num_pet)
-
-    out = {
-        "paciente": paciente,
-        "analisis": [hema],        # compatibilidad
-        "hematologia": [hema],
+    {
+      "paciente": {...},
+      "hematologia": [ {...} ],
+      "bioquimica":  [ {...} ],
+      "gasometria":  [ {...} ],
+      "orina":       [ {...} ],
+      "analisis":    [ {...} ]  # alias de hematologia para compatibilidad
     }
 
-    if bio:
-        out["bioquimica"] = [bio]
-    if gas:
-        out["gasometria"] = [gas]
-    if ori:
-        out["orina"] = [ori]
+    (Si alguna serie no está presente, vendrá como lista vacía o no se incluirá.)
+    """
+    pdf_path = str(pdf_path)
+    texto = _extract_text_from_pdf(pdf_path)
 
-    return out
+    # --- Datos de paciente ---
+    paciente_data = _parse_patient(texto)
+
+    # --- Metadatos comunes ---
+    fecha_analisis = _parse_fecha_finalizacion(texto)
+    numero_peticion = _parse_numero_peticion(texto)
+    origen = _parse_origen(texto)  # de momento solo para hematología
+
+    # --- Hematología ---
+    hemat = _parse_hematologia(texto, fecha_analisis, numero_peticion, origen)
+
+    # --- Bioquímica ---
+    bio = _parse_bioquimica(texto, fecha_analisis, numero_peticion)
+
+    # --- Gasometría ---
+    gaso = _parse_gasometria(texto, fecha_analisis, numero_peticion)
+
+    # --- Orina ---
+    orina = _parse_orina(texto, fecha_analisis, numero_peticion)
+
+    # Helper: ¿hay algún valor real en un dict?
+    def _has_any_value(d: Dict[str, Any], ignore_keys=None) -> bool:
+        if ignore_keys is None:
+            ignore_keys = ()
+        return any(
+            v is not None
+            for k, v in d.items()
+            if k not in ignore_keys
+        )
+
+    has_hema = _has_any_value(hemat, ignore_keys=("fecha_analisis", "numero_peticion", "origen"))
+    has_bio = bio is not None and _has_any_value(bio, ignore_keys=("fecha_analisis", "numero_peticion"))
+    has_gaso = gaso is not None and _has_any_value(gaso, ignore_keys=("fecha_analisis", "numero_peticion"))
+    has_orina = orina is not None and _has_any_value(orina, ignore_keys=("fecha_analisis", "numero_peticion"))
+
+    if not (has_hema or has_bio or has_gaso or has_orina):
+        # Hemocultivos u otros informes que no encajan
+        raise ValueError(
+            "El PDF no parece ser un informe de laboratorio (hemograma/bioquímica/"
+            "gasometría/orina) reconocible y no se importará."
+        )
+
+    result: Dict[str, Any] = {
+        "paciente": paciente_data or {},
+    }
+
+    if has_hema:
+        result["hematologia"] = [hemat]
+        # Compatibilidad con código antiguo (usa 'analisis')
+        result["analisis"] = [hemat]
+
+    if has_bio:
+        result["bioquimica"] = [bio]
+
+    if has_gaso:
+        result["gasometria"] = [gaso]
+
+    if has_orina:
+        result["orina"] = [orina]
+
+    return result
 
 
-# ================================================================
-#  CLI
-# ================================================================
+# ============================================================
+#   UTILIDAD LÍNEA DE COMANDOS
+# ============================================================
 
 def pdf_to_json_file(pdf_path: str, json_path: str) -> None:
+    """
+    Convierte un PDF a JSON y lo guarda en 'json_path'.
+    """
     data = parse_hematology_pdf(pdf_path)
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -340,15 +552,18 @@ def pdf_to_json_file(pdf_path: str, json_path: str) -> None:
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) < 2:
         print("Uso: python pdf_to_json.py <informe.pdf> [salida.json]")
-        exit()
+        sys.exit(1)
 
     pdf_in = sys.argv[1]
     if len(sys.argv) >= 3:
         json_out = sys.argv[2]
     else:
-        json_out = str(Path(pdf_in).with_suffix(".json"))
+        # Por defecto, mismo nombre con extensión .json
+        p = Path(pdf_in)
+        json_out = str(p.with_suffix(".json"))
 
     pdf_to_json_file(pdf_in, json_out)
     print(f"JSON generado: {json_out}")
