@@ -1,321 +1,241 @@
 # -*- coding: utf-8 -*-
 """
-Aplicación de análisis de hematología
+Aplicación principal de gestión de análisis de laboratorio.
+Modelo A:
+ - "Nuevo paciente": elegir archivo .db → crear (confirmar sobrescritura si existe)
+ - "Abrir paciente": abrir archivo existente
+ - "Cerrar": cerrar conexión
 Autor: Borja Alonso Tristán
 Año: 2025
 """
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from tkinter import ttk
-from pathlib import Path
-import logging
+from tkinter import ttk, filedialog, messagebox
+import os
+import json
 
 from db_manager import HematologyDB
-from pdf_to_json import parse_hematology_pdf
 from analisis_view import AnalisisView
 from charts_view import ChartsView
 from ranges_config import RangesManager, RangesDialog
+from pdf_to_json import parse_hematology_pdf
 
 
 class HematologiaApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Análisis de Hematología")
+        self.title("Gestor de análisis clínicos – Hematología / Bioquímica / Orina / Gasometría")
+        self.geometry("1200x800")
 
-        # Base de datos
-        self.db = HematologyDB()
-        self.current_db_path = None
+        # DB
+        self.db: HematologyDB | None = None
+        self.db_path: str | None = None
 
-        # Rangos
+        # Ranges
         self.ranges_manager = RangesManager()
 
-        # Ventana centrada 1024x768
-        w, h = 1024, 768
-        sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
-        x, y = (sw - w) // 2, (sh - h) // 2
-        self.geometry(f"{w}x{h}+{x}+{y}")
+        # UI
+        self._build_menu()
+        self._build_main_layout()
 
-        # Crear UI
-        self._crear_menu()
-        self._crear_contenido_inicial()
-        self._actualizar_estado_menus()
-
-
-    # ============================================================
-    #   Menús
-    # ============================================================
-    def _crear_menu(self):
+    # ---------------------------------------------------------------------
+    #   INTERFAZ
+    # ---------------------------------------------------------------------
+    def _build_menu(self):
         menubar = tk.Menu(self)
 
-        # --- ARCHIVO ---
-        menu_archivo = tk.Menu(menubar, tearoff=0)
-        menu_archivo.add_command(label="Nuevo Paciente (crear BD)...", command=self.nuevo_paciente)
-        menu_archivo.add_command(label="Abrir datos de Paciente...", command=self.abrir_datos_paciente)
-        menu_archivo.add_command(label="Cerrar datos del Paciente", command=self.cerrar_datos_paciente)
-        menu_archivo.add_separator()
-        menu_archivo.add_command(label="Salir", command=self.destroy)
-        menubar.add_cascade(label="Archivo", menu=menu_archivo)
+        # --- Archivo ---
+        m_file = tk.Menu(menubar, tearoff=0)
+        m_file.add_command(label="Nuevo paciente...", command=self.menu_new_db)
+        m_file.add_command(label="Abrir paciente...", command=self.menu_open_db)
+        m_file.add_separator()
+        m_file.add_command(label="Importar PDF de análisis...", command=self.menu_import_pdf)
+        m_file.add_separator()
+        m_file.add_command(label="Cerrar datos", command=self.menu_close_db)
+        m_file.add_separator()
+        m_file.add_command(label="Salir", command=self.quit)
+        menubar.add_cascade(label="Archivo", menu=m_file)
 
-        # --- EDICIÓN ---
-        self.menu_edicion = tk.Menu(menubar, tearoff=0)
-        self.menu_edicion.add_command(label="Importar análisis desde PDF...", command=self.importar_analisis)
-        menubar.add_cascade(label="Edición", menu=self.menu_edicion)
-
-        # --- CONFIGURACIÓN ---
-        menu_config = tk.Menu(menubar, tearoff=0)
-        menu_config.add_command(label="Rangos de parámetros...", command=self.configurar_rangos)
-        menubar.add_cascade(label="Configuración", menu=menu_config)
-
-        # --- ACERCA DE ---
-        menu_acerca = tk.Menu(menubar, tearoff=0)
-        menu_acerca.add_command(label="Acerca de...", command=self.mostrar_acerca_de)
-        menubar.add_cascade(label="Acerca de", menu=menu_acerca)
+        # --- Configuración ---
+        m_cfg = tk.Menu(menubar, tearoff=0)
+        m_cfg.add_command(label="Rangos de referencia...", command=self.menu_edit_ranges)
+        menubar.add_cascade(label="Configuración", menu=m_cfg)
 
         self.config(menu=menubar)
 
+    def _build_main_layout(self):
+        # Notebook (dos pestañas)
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill="both", expand=True)
 
-    # ============================================================
-    #   Contenido principal
-    # ============================================================
-    def _crear_contenido_inicial(self):
-        container = ttk.Frame(self)
-        container.pack(fill="both", expand=True)
+        # Tab 1: Datos en tabla
+        self.tab_datos = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_datos, text="Datos")
 
-        self.header_label = ttk.Label(
-            container, text="Análisis de Hematología",
-            font=("Segoe UI", 10)
-        )
-        self.header_label.pack(side="top", pady=10)
+        # Tab 2: Gráficas
+        self.tab_graficas = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab_graficas, text="Gráficas")
 
-        # Paned vertical
-        paned = ttk.PanedWindow(container, orient="vertical")
-        paned.pack(fill="both", expand=True, padx=10, pady=10)
-
-        top_frame = ttk.Frame(paned)
-        bottom_frame = ttk.Frame(paned)
-
-        paned.add(top_frame, weight=3)
-        paned.add(bottom_frame, weight=2)
-
-        # Tabla
+        # Dentro de Datos → AnalisisView
         self.analisis_view = AnalisisView(
-            top_frame, db=self.db, ranges_manager=self.ranges_manager
+            self.tab_datos,
+            db=None,
+            ranges_manager=self.ranges_manager
         )
         self.analisis_view.pack(fill="both", expand=True)
 
-        # Gráficos
+        # Dentro de Gráficas → ChartsView
         self.charts_view = ChartsView(
-            bottom_frame, db=self.db, ranges_manager=self.ranges_manager
+            self.tab_graficas,
+            db=None,
+            ranges_manager=self.ranges_manager
         )
         self.charts_view.pack(fill="both", expand=True)
 
-        self._update_patient_label()
-
-
-    # ============================================================
-    #   Archivo: crear/abrir/cerrar BD
-    # ============================================================
-    def nuevo_paciente(self):
-        ruta = filedialog.asksaveasfilename(
-            title="Crear nueva base de datos de Paciente",
+    # ---------------------------------------------------------------------
+    #   MENÚ: NUEVO PACIENTE (CREAR BD)
+    # ---------------------------------------------------------------------
+    def menu_new_db(self):
+        path = filedialog.asksaveasfilename(
+            title="Crear nueva base de datos",
             defaultextension=".db",
-            filetypes=[("Bases SQLite", "*.db *.sqlite *.sqlite3")]
+            filetypes=[("Base de datos SQLite", "*.db")]
         )
-
-        if not ruta:
+        if not path:
             return
 
-        try:
-            self.db.create(ruta)
-            self.current_db_path = ruta
-            messagebox.showinfo("BD creada", f"Base de datos creada:\n{ruta}")
-            self._post_db_open()
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+        if os.path.exists(path):
+            if not messagebox.askyesno(
+                "Sobrescribir",
+                "El archivo ya existe.\n¿Deseas sobrescribirlo completamente?"
+            ):
+                return
+            os.remove(path)
 
-    def abrir_datos_paciente(self):
-        ruta = filedialog.askopenfilename(
-            title="Abrir base de datos de Paciente",
-            filetypes=[("Bases SQLite", "*.db *.sqlite *.sqlite3")]
+        self.db = HematologyDB(path)
+        self.db_path = path
+        self.db.open()
+
+        messagebox.showinfo("Nueva BD", "Base de datos creada correctamente.")
+        self.refresh_all()
+
+    # ---------------------------------------------------------------------
+    #   MENÚ: ABRIR BD EXISTENTE
+    # ---------------------------------------------------------------------
+    def menu_open_db(self):
+        path = filedialog.askopenfilename(
+            title="Abrir base de datos",
+            filetypes=[("Base de datos SQLite", "*.db")]
         )
-
-        if not ruta:
+        if not path:
             return
 
-        try:
-            self.db.open(ruta)
-            self.current_db_path = ruta
-            messagebox.showinfo("BD abierta", f"Base de datos abierta:\n{ruta}")
-            self._post_db_open()
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-
-    def cerrar_datos_paciente(self):
-        try:
-            self.db.close()
-            self.current_db_path = None
-            self.analisis_view.clear()
-            self.charts_view.clear()
-            self._update_patient_label()
-            self._actualizar_estado_menus()
-            messagebox.showinfo("BD cerrada", "Se ha cerrado la base de datos.")
-        except Exception:
-            pass
-
-
-    def _post_db_open(self):
-        """Actualizar vistas tras abrir/crear una BD."""
-        self.analisis_view.set_db(self.db)
-        self.analisis_view.refresh()
-        self.charts_view.set_db(self.db)
-        self.charts_view.refresh()
-        self._actualizar_estado_menus()
-        self._update_patient_label()
-
-
-    # ============================================================
-    #   Importación desde PDF
-    # ============================================================
-    def _asegurar_bd_abierta(self) -> bool:
-        if self.db is None or not self.db.is_open:
-            messagebox.showwarning("Sin BD", "Antes debes abrir o crear una base de datos.")
-            return False
-        return True
-
-    def importar_analisis(self):
-        if not self._asegurar_bd_abierta():
+        if not os.path.exists(path):
+            messagebox.showerror("Error", "El archivo no existe.")
             return
 
-        rutas = filedialog.askopenfilenames(
-            title="Seleccionar informes PDF",
+        self.db = HematologyDB(path)
+        self.db_path = path
+        self.db.open()
+
+        messagebox.showinfo("BD abierta", f"Archivo cargado:\n{path}")
+        self.refresh_all()
+
+    # ---------------------------------------------------------------------
+    #   MENÚ: IMPORTAR PDF
+    # ---------------------------------------------------------------------
+    def menu_import_pdf(self):
+        if not self.db:
+            messagebox.showerror("Sin BD", "Debes crear o abrir una base de datos primero.")
+            return
+
+        pdf_path = filedialog.askopenfilename(
+            title="Seleccionar PDF de análisis",
             filetypes=[("PDF", "*.pdf")]
         )
-        if not rutas:
+        if not pdf_path:
             return
 
-        errores = 0
-        importados = 0
-
-        for ruta in rutas:
-            try:
-                parsed = parse_hematology_pdf(ruta)
-
-                # Guardar paciente
-                if parsed.get("paciente"):
-                    self.db.save_patient(parsed["paciente"])
-
-                # Hematología
-                for item in parsed.get("hematologia", []):
-                    self.db.insert_hematologia(item)
-                    importados += 1
-
-                # Bioquímica
-                for item in parsed.get("bioquimica", []):
-                    self.db.insert_bioquimica(item)
-                    importados += 1
-
-                # Gasometría
-                for item in parsed.get("gasometria", []):
-                    self.db.insert_gasometria(item)
-                    importados += 1
-
-                # Orina
-                for item in parsed.get("orina", []):
-                    self.db.insert_orina(item)
-                    importados += 1
-
-            except Exception as e:
-                errores += 1
-                logging.error(f"Error importando {ruta}: {e}")
-
-        self.analisis_view.refresh()
-        self.charts_view.refresh()
-        self._update_patient_label()
-
-        if errores == 0:
-            messagebox.showinfo("Importación completada", f"Importados {importados} análisis.")
-        else:
-            messagebox.showwarning(
-                "Importación parcial",
-                f"Importados {importados} análisis.\n{errores} PDF tuvieron errores."
-            )
-
-
-    # ============================================================
-    #   Configuración de rangos
-    # ============================================================
-    def configurar_rangos(self):
-        dlg = RangesDialog(self, self.ranges_manager)
-        self.wait_window(dlg)
-
-        self.analisis_view.set_ranges_manager(self.ranges_manager)
-        self.charts_view.set_ranges_manager(self.ranges_manager)
-
-        self.analisis_view.refresh()
-        self.charts_view.refresh()
-
-
-    # ============================================================
-    #   Acerca de
-    # ============================================================
-    def mostrar_acerca_de(self):
-        messagebox.showinfo(
-            "Acerca de",
-            "Aplicación de análisis de hematología\nAutor: Borja Alonso Tristán\nAño: 2025"
-        )
-
-
-    # ============================================================
-    #   Auxiliares
-    # ============================================================
-    def _actualizar_estado_menus(self):
-        estado = "normal" if (self.db and self.db.is_open) else "disabled"
         try:
-            self.menu_edicion.entryconfig("Importar análisis desde PDF...", state=estado)
-        except:
-            pass
-
-    def _update_patient_label(self):
-        if not self.db or not self.db.is_open:
-            self.header_label.config(text="Análisis de Hematología")
+            data = parse_hematology_pdf(pdf_path)
+        except Exception as e:
+            messagebox.showerror("Error al importar PDF", str(e))
             return
 
-        pac = self.db.get_patient()
-        if not pac:
-            self.header_label.config(text="Paciente: (sin datos)")
+        # -----------------------------------------
+        # Guardar datos de paciente
+        # -----------------------------------------
+        if "paciente" in data:
+            self.db.save_patient(data["paciente"])
+
+        # -----------------------------------------
+        # Insertar todas las series del análisis
+        # -----------------------------------------
+        if "hematologia" in data:
+            for d in data["hematologia"]:
+                self.db.insert_hematologia(d)
+
+        if "bioquimica" in data:
+            for d in data["bioquimica"]:
+                self.db.insert_bioquimica(d)
+
+        if "gasometria" in data:
+            for d in data["gasometria"]:
+                self.db.insert_gasometria(d)
+
+        if "orina" in data:
+            for d in data["orina"]:
+                self.db.insert_orina(d)
+
+        messagebox.showinfo("Importación completada", "PDF importado correctamente.")
+        self.refresh_all()
+
+    # ---------------------------------------------------------------------
+    #   MENÚ: CERRAR BD
+    # ---------------------------------------------------------------------
+    def menu_close_db(self):
+        if self.db:
+            self.db.close()
+
+        self.db = None
+        self.db_path = None
+        self.analisis_view.set_db(None)
+        self.charts_view.set_db(None)
+
+        self.analisis_view.clear()
+        self.charts_view.clear()
+
+        messagebox.showinfo("Cerrado", "Base de datos cerrada.")
+
+    # ---------------------------------------------------------------------
+    #   MENÚ: EDITAR RANGOS
+    # ---------------------------------------------------------------------
+    def menu_edit_ranges(self):
+        dlg = RangesDialog(self, self.ranges_manager)
+        dlg.wait_window()
+        # actualizar vistas
+        self.analisis_view.refresh()
+        self.charts_view.refresh()
+
+    # ---------------------------------------------------------------------
+    #   REFRESCAR PANTALLAS
+    # ---------------------------------------------------------------------
+    def refresh_all(self):
+        if not self.db:
             return
 
-        nombre = pac.get("nombre", "")
-        apellidos = pac.get("apellidos", "")
-        sexo = pac.get("sexo", "")
-        nac = pac.get("fecha_nacimiento", "")
-        hist = pac.get("numero_historia", "")
+        self.analisis_view.set_db(self.db)
+        self.charts_view.set_db(self.db)
 
-        linea1 = f"{nombre} {apellidos}".strip()
-        linea2 = " | ".join(
-            p for p in [
-                f"Sexo: {sexo}" if sexo else None,
-                f"Nac.: {nac}" if nac else None,
-                f"Historia: {hist}" if hist else None,
-            ] if p
-        )
+        self.analisis_view.refresh()
+        self.charts_view.refresh()
 
-        self.header_label.config(
-            text=f"{linea1}\n{linea2}",
-            font=("Segoe UI", 10)
-        )
 
+# =====================================================================
+# MAIN
+# =====================================================================
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[
-            logging.FileHandler("hematologia.log", encoding="utf-8"),
-            logging.StreamHandler()
-        ]
-    )
     app = HematologiaApp()
     app.mainloop()
