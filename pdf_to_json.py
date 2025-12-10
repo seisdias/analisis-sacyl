@@ -32,12 +32,12 @@ def _extract_text_from_pdf(pdf_path: str) -> str:
     return "\n".join(chunks)
 
 
-def _extract_float(pattern: str, texto: str) -> Optional[float]:
+def _extract_float(pattern: str, texto: str, flags: int = 0) -> Optional[float]:
     """
     Aplica un patrón regex y devuelve el primer grupo capturado como float.
     Si no encuentra nada, devuelve None.
     """
-    m = re.search(pattern, texto)
+    m = re.search(pattern, texto, flags=flags)
     if not m:
         return None
     valor_str = m.group(1).replace(",", ".")
@@ -76,6 +76,17 @@ def _extract_token(pattern: str, texto: str) -> Optional[str]:
     return m.group(1).strip()
 
 
+def _has_any_value(d: Dict[str, Any], ignore_keys: tuple = ()) -> bool:
+    """
+    Indica si en el dict hay algún valor distinto de None (ignorando ciertas claves).
+    """
+    return any(
+        v is not None
+        for k, v in d.items()
+        if k not in ignore_keys
+    )
+
+
 # ============================================================
 #   METADATOS DE ANÁLISIS (FECHA, PETICIÓN, ORIGEN)
 # ============================================================
@@ -96,7 +107,7 @@ def _parse_numero_peticion(texto: str) -> Optional[str]:
     """
     Extrae el 'Nº petición: XXXXX'. Devuelve None si no lo encuentra.
     """
-    m = re.search(r"Nº petición:\s*([0-9A-Za-z]+)", texto)
+    m = re.search(r"Nº petición:\s*([0-9A-Za-z/]+)", texto)
     return m.group(1) if m else None
 
 
@@ -108,7 +119,26 @@ def _parse_origen(texto: str) -> Optional[str]:
     if not m:
         return None
     linea = m.group(1)
+    # Cortamos si hay salto de línea incrustado o campos a continuación
     return linea.strip()
+
+
+def _parse_metadata(texto: str) -> Dict[str, Any]:
+    """
+    Devuelve un dict con los metadatos comunes del análisis:
+      - fecha_analisis
+      - numero_peticion
+      - origen
+    """
+    fecha_analisis = _parse_fecha_finalizacion(texto)
+    numero_peticion = _parse_numero_peticion(texto)
+    origen = _parse_origen(texto)
+
+    return {
+        "fecha_analisis": fecha_analisis,
+        "numero_peticion": numero_peticion,
+        "origen": origen,
+    }
 
 
 # ============================================================
@@ -190,17 +220,55 @@ def _parse_patient(text: str) -> Dict[str, Any]:
 
 
 # ============================================================
+#   SEPARACIÓN EN SECCIONES DEL INFORME
+# ============================================================
+
+SECTION_PATTERNS = {
+    "hematologia": r"HEMATOLOGÍA",
+    "bioquimica": r"BIOQUÍMICA",
+    "gasometria": r"GASOMETRÍA",
+    # No tenemos ejemplo claro de urinoanálisis aún. Si aparece ORINA como
+    # encabezado de sección, lo usaremos como pista.
+    "orina": r"\bORINA\b",
+}
+
+
+def _split_lab_sections(text: str) -> Dict[str, str]:
+    """
+    Busca encabezados tipo 'HEMATOLOGÍA', 'BIOQUÍMICA', 'GASOMETRÍA', 'ORINA'
+    y devuelve un dict con el texto parcial de cada sección.
+
+    Si no se encuentra una sección, simplemente no aparecerá en el dict.
+    """
+    markers: list[tuple[int, str]] = []
+
+    for key, pat in SECTION_PATTERNS.items():
+        m = re.search(pat, text)
+        if m:
+            markers.append((m.start(), key))
+
+    if not markers:
+        return {}
+
+    markers.sort(key=lambda t: t[0])
+
+    sections: Dict[str, str] = {}
+    for idx, (start_pos, key) in enumerate(markers):
+        end_pos = markers[idx + 1][0] if idx + 1 < len(markers) else len(text)
+        sections[key] = text[start_pos:end_pos]
+
+    return sections
+
+
+# ============================================================
 #   HEMATOLOGÍA (HEMOGRAMA)
 # ============================================================
 
-def _parse_hematologia(texto: str, fecha_analisis: str,
-                       numero_peticion: Optional[str],
-                       origen: Optional[str]) -> Dict[str, Any]:
+def _parse_hematologia_section(texto: str) -> Dict[str, Optional[float]]:
     """
-    Extrae los datos de hemograma / hematología básica.
-    Devuelve un dict (puede tener muchos campos a None si no aparecen).
+    Extrae los datos de hemograma / hematología básica a partir
+    SOLO del texto de la sección de hematología.
     """
-
     # --- Serie blanca ---
     leucocitos = _extract_float(
         r"Leucocitos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+x10\^3/µL", texto
@@ -269,11 +337,7 @@ def _parse_hematologia(texto: str, fecha_analisis: str,
         r"Volumen Plaquetar Medio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+fL", texto
     )
 
-    analisis = {
-        "fecha_analisis": fecha_analisis,
-        "numero_peticion": numero_peticion,
-        "origen": origen,
-
+    return {
         "leucocitos": leucocitos,
         "neutrofilos_pct": neutrofilos_pct,
         "linfocitos_pct": linfocitos_pct,
@@ -299,23 +363,17 @@ def _parse_hematologia(texto: str, fecha_analisis: str,
         "vpm": vpm,
     }
 
-    return analisis
-
 
 # ============================================================
-#   BIOQUÍMICA + VITAMINAS
+#   BIOQUÍMICA + PERFIL LIPÍDICO
 # ============================================================
 
-def _parse_bioquimica(texto: str, fecha_analisis: str,
-                      numero_peticion: Optional[str]) -> Optional[Dict[str, Any]]:
+def _parse_bioquimica_section(texto: str) -> Dict[str, Optional[float]]:
     """
-    Extrae parámetros de bioquímica y vitaminas.
-    Devuelve dict o None si no encuentra nada relevante.
+    Extrae parámetros de bioquímica / perfil lipídico a partir del texto
+    de la sección de BIOQUÍMICA (y PERFIL LIPÍDICO si aparece).
     """
-    data: Dict[str, Any] = {
-        "fecha_analisis": fecha_analisis,
-        "numero_peticion": numero_peticion,
-    }
+    data: Dict[str, Optional[float]] = {}
 
     # Valores básicos
     data["glucosa"] = _extract_float(r"Glucosa\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
@@ -324,55 +382,70 @@ def _parse_bioquimica(texto: str, fecha_analisis: str,
 
     data["sodio"] = _extract_float(r"Sodio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
     data["potasio"] = _extract_float(r"Potasio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["cloro"] = _extract_float(r"Cloro\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["calcio"] = _extract_float(r"Calcio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["fosforo"] = _extract_float(r"Fósforo\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
 
+    # En los informes reales es "Cloruro", no "Cloro"
+    data["cloruro"] = _extract_float(r"Cloruro\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+
+    # Calcio / Fosfato (puede aparecer como Fosfato / Fósforo sin tilde)
+    data["calcio"] = _extract_float(r"Calcio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+mg/dL", texto)
+    data["fosfato"] = _extract_float(
+        r"(?:Fosfato|Fósforo|Fosforo)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+
+    # Otros parámetros frecuentes
+    data["acido_urico"] = _extract_float(
+        r"Acido úrico\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["proteinas_totales"] = _extract_float(
+        r"Proteínas totales\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+
+    data["ast_got"] = _extract_float(
+        r"Aspartato aminotransferasa \(AST/GOT\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["alt_gpt"] = _extract_float(
+        r"Alanina aminotransferasa \(ALT/GPT\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["ggt"] = _extract_float(
+        r"Gammaglutamil transferasa \(GGT\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["bilirrubina_total"] = _extract_float(
+        r"Bilirrubina Total\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["fosfatasa_alcalina"] = _extract_float(
+        r"Fosfatasa alcalina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["ldh"] = _extract_float(
+        r"Lactato deshidrogenasa \(LDH\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["magnesio"] = _extract_float(
+        r"Magnesio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+    data["pcr"] = _extract_float(
+        r"Proteína C reactiva\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
+
+    # Perfil lipídico (suele estar al final de la misma página)
     data["colesterol_total"] = _extract_float(
         r"Colesterol total\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
-    )
-    data["colesterol_hdl"] = _extract_float(
-        r"Colesterol HDL\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
-    )
-    data["colesterol_ldl"] = _extract_float(
-        r"Colesterol LDL\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
-    )
-    data["colesterol_no_hdl"] = _extract_float(
-        r"Colesterol no HDL\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
     )
     data["trigliceridos"] = _extract_float(
         r"Triglicéridos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
     )
-    data["indice_riesgo"] = _extract_float(
-        r"Índice riesgo\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
-    )
 
-    data["hierro"] = _extract_float(r"Hierro\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["ferritina"] = _extract_float(r"Ferritina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["vitamina_b12"] = _extract_float(r"Vitamina\s+B12\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-
-    # ¿Hay al menos un valor numérico?
-    has_value = any(
-        v is not None for k, v in data.items()
-        if k not in ("fecha_analisis", "numero_peticion")
-    )
-    return data if has_value else None
+    return data
 
 
 # ============================================================
 #   GASOMETRÍA
 # ============================================================
 
-def _parse_gasometria(texto: str, fecha_analisis: str,
-                      numero_peticion: Optional[str]) -> Optional[Dict[str, Any]]:
+def _parse_gasometria_section(texto: str) -> Dict[str, Optional[float]]:
     """
     Parsea la sección de GASOMETRÍA (venosa/arterial) y devuelve un dict
-    plano con los valores numéricos o None si no hay nada.
+    plano con los valores numéricos.
     """
-    data: Dict[str, Any] = {
-        "fecha_analisis": fecha_analisis,
-        "numero_peticion": numero_peticion,
-    }
+    data: Dict[str, Optional[float]] = {}
 
     data["gaso_ph"] = _extract_named_value("pH", texto)
     data["gaso_pco2"] = _extract_named_value("pCO2", texto)
@@ -393,29 +466,22 @@ def _parse_gasometria(texto: str, fecha_analisis: str,
     data["gaso_beecf"] = _extract_named_value(
         "E. de bases en fluido extracelular (BEecf)", texto
     )
+    data["gaso_calcio_ionico"] = _extract_named_value("Calcio iónico", texto)
     data["gaso_lactato"] = _extract_named_value("Lactato", texto)
 
-    has_value = any(
-        v is not None for k, v in data.items()
-        if k not in ("fecha_analisis", "numero_peticion")
-    )
-    return data if has_value else None
+    return data
 
 
 # ============================================================
 #   ORINA / URINOANÁLISIS
 # ============================================================
 
-def _parse_orina(texto: str, fecha_analisis: str,
-                 numero_peticion: Optional[str]) -> Optional[Dict[str, Any]]:
+def _parse_orina_section(texto: str) -> Dict[str, Any]:
     """
-    Extrae parámetros de orina / urinoanálisis.
-    Devuelve dict o None si no encuentra nada relevante.
+    Extrae parámetros de orina / urinoanálisis a partir del texto de la
+    sección de ORINA (si existe).
     """
-    data: Dict[str, Any] = {
-        "fecha_analisis": fecha_analisis,
-        "numero_peticion": numero_peticion,
-    }
+    data: Dict[str, Any] = {}
 
     # Físico-químico
     data["ph"] = _extract_float(r"\bpH\s+\**([0-9]+(?:[.,][0-9]+)?)\s*", texto)
@@ -433,7 +499,9 @@ def _parse_orina(texto: str, fecha_analisis: str,
 
     # Cuantitativos de orina (si los hubiera)
     data["sodio_ur"] = _extract_float(r"Sodio\s+orina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["creatinina_ur"] = _extract_float(r"Creatinina\s+orina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["creatinina_ur"] = _extract_float(
+        r"Creatinina\s+orina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
     data["indice_albumina_creatinina"] = _extract_float(
         r"Índice\s+Alb/Cre\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
     )
@@ -444,16 +512,11 @@ def _parse_orina(texto: str, fecha_analisis: str,
         r"Categoría\s+albuminuria\s+\**([A-Za-z0-9 ]+)", texto
     )
 
-    # ¿Hay al menos algo informado?
-    has_value = any(
-        v is not None for k, v in data.items()
-        if k not in ("fecha_analisis", "numero_peticion")
-    )
-    return data if has_value else None
+    return data
 
 
 # ============================================================
-#   FUNCIÓN PRINCIPAL
+#   FUNCIÓN PRINCIPAL (API PÚBLICA)
 # ============================================================
 
 def parse_hematology_pdf(pdf_path: str) -> Dict[str, Any]:
@@ -478,39 +541,38 @@ def parse_hematology_pdf(pdf_path: str) -> Dict[str, Any]:
     paciente_data = _parse_patient(texto)
 
     # --- Metadatos comunes ---
-    fecha_analisis = _parse_fecha_finalizacion(texto)
-    numero_peticion = _parse_numero_peticion(texto)
-    origen = _parse_origen(texto)  # de momento solo para hematología
+    meta = _parse_metadata(texto)
+    fecha_analisis = meta["fecha_analisis"]
+    numero_peticion = meta["numero_peticion"]
+    origen = meta["origen"]
+
+    # --- Secciones del informe ---
+    sections = _split_lab_sections(texto)
+
+    hemat_text = sections.get("hematologia", texto)
+    bio_text = sections.get("bioquimica", texto)
+    gaso_text = sections.get("gasometria", texto)
+    orina_text = sections.get("orina", "")
 
     # --- Hematología ---
-    hemat = _parse_hematologia(texto, fecha_analisis, numero_peticion, origen)
+    hemat_vals = _parse_hematologia_section(hemat_text)
+    has_hema = _has_any_value(hemat_vals)
 
     # --- Bioquímica ---
-    bio = _parse_bioquimica(texto, fecha_analisis, numero_peticion)
+    bio_vals = _parse_bioquimica_section(bio_text) if "bioquimica" in sections else {}
+    has_bio = _has_any_value(bio_vals)
 
     # --- Gasometría ---
-    gaso = _parse_gasometria(texto, fecha_analisis, numero_peticion)
+    gaso_vals = _parse_gasometria_section(gaso_text) if "gasometria" in sections else {}
+    has_gaso = _has_any_value(gaso_vals)
 
     # --- Orina ---
-    orina = _parse_orina(texto, fecha_analisis, numero_peticion)
+    orina_vals = _parse_orina_section(orina_text) if "orina" in sections else {}
+    has_orina = _has_any_value(orina_vals)
 
-    # Helper: ¿hay algún valor real en un dict?
-    def _has_any_value(d: Dict[str, Any], ignore_keys=None) -> bool:
-        if ignore_keys is None:
-            ignore_keys = ()
-        return any(
-            v is not None
-            for k, v in d.items()
-            if k not in ignore_keys
-        )
-
-    has_hema = _has_any_value(hemat, ignore_keys=("fecha_analisis", "numero_peticion", "origen"))
-    has_bio = bio is not None and _has_any_value(bio, ignore_keys=("fecha_analisis", "numero_peticion"))
-    has_gaso = gaso is not None and _has_any_value(gaso, ignore_keys=("fecha_analisis", "numero_peticion"))
-    has_orina = orina is not None and _has_any_value(orina, ignore_keys=("fecha_analisis", "numero_peticion"))
-
+    # Si no hay ningún bloque reconocible, es probablemente un informe solo de
+    # hemocultivos, citometría, radiología, etc. y NO se importa.
     if not (has_hema or has_bio or has_gaso or has_orina):
-        # Hemocultivos u otros informes que no encajan
         raise ValueError(
             "El PDF no parece ser un informe de laboratorio (hemograma/bioquímica/"
             "gasometría/orina) reconocible y no se importará."
@@ -521,18 +583,39 @@ def parse_hematology_pdf(pdf_path: str) -> Dict[str, Any]:
     }
 
     if has_hema:
-        result["hematologia"] = [hemat]
+        hemat_record = {
+            "fecha_analisis": fecha_analisis,
+            "numero_peticion": numero_peticion,
+            "origen": origen,
+            **hemat_vals,
+        }
+        result["hematologia"] = [hemat_record]
         # Compatibilidad con código antiguo (usa 'analisis')
-        result["analisis"] = [hemat]
+        result["analisis"] = [hemat_record]
 
     if has_bio:
-        result["bioquimica"] = [bio]
+        bio_record = {
+            "fecha_analisis": fecha_analisis,
+            "numero_peticion": numero_peticion,
+            **bio_vals,
+        }
+        result["bioquimica"] = [bio_record]
 
     if has_gaso:
-        result["gasometria"] = [gaso]
+        gaso_record = {
+            "fecha_analisis": fecha_analisis,
+            "numero_peticion": numero_peticion,
+            **gaso_vals,
+        }
+        result["gasometria"] = [gaso_record]
 
     if has_orina:
-        result["orina"] = [orina]
+        orina_record = {
+            "fecha_analisis": fecha_analisis,
+            "numero_peticion": numero_peticion,
+            **orina_vals,
+        }
+        result["orina"] = [orina_record]
 
     return result
 
