@@ -1,5 +1,5 @@
-# db_manager.py en el raíz del proyecto
+from db import AnalysisDB
 
-from db.db_manager import HematologyDB  # reexport
+HematologyDB = AnalysisDB   # alias temporal durante la transición
 
-__all__ = ["HematologyDB"]
+__all__ = ["AnalysisDB", "HematologyDB"]
