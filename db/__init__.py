@@ -1,5 +1,6 @@
 # db/__init__.py
 
-from .db_manager import HematologyDB
+from .db_manager import AnalysisDB
 
-__all__ = ["HematologyDB"]
+__all__ = ["AnalysisDB"]
+

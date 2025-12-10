@@ -12,12 +12,20 @@ from .bioquimica import Bioquimica
 from .gasometria import Gasometria
 from .orina import Orina
 
-DB_FILE = "hematologia.db"
+DB_FILE = "analisis.db"
 
 
-class HematologyDB:
+class AnalysisDB:
     """
-    Fachada principal para la base de datos de análisis de laboratorio.
+    Fachada principal para la base de datos de análisis clínicos.
+
+    Contiene componentes:
+      - analisis (cabecera del documento)
+      - paciente
+      - hematologia
+      - bioquimica
+      - gasometria
+      - orina
     """
 
     def __init__(self, db_path: str = DB_FILE):
@@ -25,6 +33,7 @@ class HematologyDB:
         self.conn: Optional[sqlite3.Connection] = None
         self.is_open: bool = False
 
+        # Componentes
         self.analisis: Optional[Analisis] = None
         self.paciente: Optional[Paciente] = None
         self.hematologia: Optional[Hematologia] = None
@@ -50,30 +59,19 @@ class HematologyDB:
     def close(self) -> None:
         if self.conn and self.is_open:
             self.conn.close()
+
         self.conn = None
         self.is_open = False
-
-        self.analisis = None
-        self.paciente = None
-        self.hematologia = None
-        self.bioquimica = None
-        self.gasometria = None
-        self.orina = None
 
     # --------------------
     #   INIT
     # --------------------
     def _create_tables(self) -> None:
-        if not self.conn:
-            raise RuntimeError("Conexión no inicializada.")
         cur = self.conn.cursor()
         db_schema.create_schema(cur)
         self.conn.commit()
 
     def _init_components(self) -> None:
-        if not self.conn:
-            raise RuntimeError("Conexión no inicializada.")
-
         self.analisis = Analisis(self.conn)
         self.paciente = Paciente(self.conn)
         self.hematologia = Hematologia(self.conn, self.analisis)
@@ -92,36 +90,36 @@ class HematologyDB:
         return self.analisis.list(limit)
 
     # Paciente
-    def save_patient(self, d: Dict[str, Any]) -> None:
-        self.paciente.save(d)
+    def save_patient(self, d: Dict[str, Any]):
+        return self.paciente.save(d)
 
     def get_patient(self):
         return self.paciente.get()
 
     # Hematologia
-    def insert_hematologia(self, d: Dict[str, Any]) -> None:
-        self.hematologia.insert(d)
+    def insert_hematologia(self, d: Dict[str, Any]):
+        return self.hematologia.insert(d)
 
-    def list_hematologia(self, limit: Optional[int] = None):
+    def list_hematologia(self, limit=None):
         return self.hematologia.list(limit)
 
-    # Bioquimica
-    def insert_bioquimica(self, d: Dict[str, Any]) -> None:
-        self.bioquimica.insert(d)
+    # Bioquímica
+    def insert_bioquimica(self, d: Dict[str, Any]):
+        return self.bioquimica.insert(d)
 
-    def list_bioquimica(self, limit: Optional[int] = None):
+    def list_bioquimica(self, limit=None):
         return self.bioquimica.list(limit)
 
-    # Gasometria
-    def insert_gasometria(self, d: Dict[str, Any]) -> None:
-        self.gasometria.insert(d)
+    # Gasometría
+    def insert_gasometria(self, d: Dict[str, Any]):
+        return self.gasometria.insert(d)
 
-    def list_gasometria(self, limit: Optional[int] = None):
+    def list_gasometria(self, limit=None):
         return self.gasometria.list(limit)
 
     # Orina
-    def insert_orina(self, d: Dict[str, Any]) -> None:
-        self.orina.insert(d)
+    def insert_orina(self, d: Dict[str, Any]):
+        return self.orina.insert(d)
 
-    def list_orina(self, limit: Optional[int] = None):
+    def list_orina(self, limit=None):
         return self.orina.list(limit)
