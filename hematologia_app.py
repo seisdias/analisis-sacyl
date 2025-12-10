@@ -26,7 +26,7 @@ from db_manager import HematologyDB
 from analisis_view import AnalisisView
 from charts_view import ChartsView
 from ranges_config import RangesManager, RangesDialog
-from pdf_to_json import parse_hematology_pdf
+from lab_pdf  import parse_hematology_pdf
 
 
 class HematologiaApp(tk.Tk):
