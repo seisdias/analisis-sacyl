@@ -1,4 +1,3 @@
-# tests/test_lab_pdf/conftest.py
 from pathlib import Path
 
 import pytest
@@ -6,31 +5,30 @@ import pytest
 from lab_pdf.pdf_utils import extract_text_from_pdf
 
 
-@pytest.fixture(scope="session")
-def data_dir() -> Path:
-    """Directorio con los PDFs de ejemplo."""
-    return Path(__file__).parents[1] / "data"
+# Carpeta de tests y carpeta de datos
+TESTS_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = TESTS_DIR / "data"
 
 
 @pytest.fixture(scope="session")
-def pdf_hemato_path(data_dir: Path) -> Path:
+def hemato_pdf_path() -> Path:
     """
-    Informe completo de laboratorio:
-    hematología + bioquímica + gasometría.
+    Ruta al PDF de hemograma/bioquímica/gasometría completo (informe estándar).
     """
-    return data_dir / "12383248W_20251111.pdf"
+    return DATA_DIR / "12383248W_20251111.pdf"
 
 
 @pytest.fixture(scope="session")
-def pdf_hemocultivos_path(data_dir: Path) -> Path:
+def hemocultivos_pdf_path() -> Path:
     """
-    Informe de hemocultivos / microbiología.
-    NO debería parsearse como hemograma/bioquímica/gasometría/orina.
+    Ruta al PDF de hemocultivos, que NO debe parsearse como análisis estándar.
     """
-    return data_dir / "12383248W_20251108_hemocultivos.pdf"
+    return DATA_DIR / "12383248W_20251108_hemocultivos.pdf"
 
 
 @pytest.fixture(scope="session")
-def hemato_text(pdf_hemato_path: Path) -> str:
-    """Texto completo del PDF de hemato para parsers parciales."""
-    return extract_text_from_pdf(str(pdf_hemato_path))
+def hemato_text(hemato_pdf_path: Path) -> str:
+    """
+    Texto completo del PDF de hemato, para parsers que trabajan con texto.
+    """
+    return extract_text_from_pdf(str(hemato_pdf_path))
