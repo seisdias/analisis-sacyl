@@ -2,12 +2,11 @@
 
 from pathlib import Path
 
-from lab_pdf.section_splitter import split_lab_sections
-from lab_pdf.hematologia_parser import parse_hematologia_section
 from lab_pdf.bioquimica_parser import parse_bioquimica_section
 from lab_pdf.gasometria_parser import parse_gasometria_section
-from lab_pdf.orina_parser import parse_orina_section
+from lab_pdf.hematologia_parser import parse_hematologia_section
 from lab_pdf.pdf_utils import extract_text_from_pdf, has_any_value
+from lab_pdf.section_splitter import split_lab_sections
 
 
 def _hemato_text() -> str:
