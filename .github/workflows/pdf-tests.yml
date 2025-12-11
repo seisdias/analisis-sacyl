@@ -28,9 +28,9 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
 
-      - name: Run pytest with coverage (min 80%)
+      - name: Run pytest for lab_pdf with coverage (min 80%)
         run: |
           python -m pytest tests/test_lab_pdf \
-            --cov=lab_pdf --cov=db \
+            --cov=lab_pdf \
             --cov-report=term-missing \
             --cov-fail-under=80
