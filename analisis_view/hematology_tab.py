@@ -7,12 +7,11 @@ Pestaña de Hematología.
 - Usa BaseAnalysisTab como contenedor de tksheet.
 - Carga los datos de la BD con get_rows_generic.
 - Aplica coloreado de celdas fuera de rango usando compute_out_of_range_cells.
-- Notifica cambios de selección a un callback de metadatos (para el panel fijo).
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import logging
 
 from ranges_config import RangesManager  # type: ignore
@@ -24,17 +23,10 @@ from .data_utils import get_rows_generic, compute_out_of_range_cells
 
 logger = logging.getLogger(__name__)
 
-MetadataCallback = Callable[[Dict[str, Any]], None]
-
 
 class HematologyTab(BaseAnalysisTab):
     """
     Pestaña de hematología.
-
-    Opcionalmente recibe:
-      - ranges_manager: para colorear fuera de rango.
-      - metadata_callback: para actualizar el panel de metadatos
-        (fecha, nº de petición, origen) en AnalisisView.
     """
 
     def __init__(
@@ -42,21 +34,12 @@ class HematologyTab(BaseAnalysisTab):
         master,
         db: Optional[HematologyDB] = None,
         ranges_manager: Optional[RangesManager] = None,
-        metadata_callback: Optional[MetadataCallback] = None,
         **kwargs,
     ):
         super().__init__(master, db=db, **kwargs)
 
         self.ranges_manager: Optional[RangesManager] = ranges_manager
-        self.metadata_callback: Optional[MetadataCallback] = metadata_callback
         self._rows: List[Dict[str, Any]] = []
-
-        # Binding para actualizar metadatos al seleccionar una celda
-        self.sheet.extra_bindings(
-            [
-                ("cell_select", self._on_cell_select),
-            ]
-        )
 
     # ------------------------------------------------------------
     #   API específica
@@ -97,7 +80,7 @@ class HematologyTab(BaseAnalysisTab):
             self.clear()
             return
 
-        # Sólo los campos visibles (sin id, sin origen)
+        # Campos visibles (incluyen fecha_analisis, numero_peticion, origen)
         fields = HEMA_VISIBLE_FIELDS
         headers = [HEMA_HEADERS.get(f, f) for f in fields]
 
@@ -143,27 +126,3 @@ class HematologyTab(BaseAnalysisTab):
                     pass
 
         self.sheet.redraw()
-
-        # Actualizar metadatos con el último análisis (más reciente)
-        if rows and self.metadata_callback is not None:
-            self.metadata_callback(rows[-1])
-
-    # ------------------------------------------------------------
-    #   Eventos
-    # ------------------------------------------------------------
-    def _on_cell_select(self, event: Any) -> None:
-        """
-        Callback al seleccionar una celda en la hoja de hematología.
-        Notifica al callback de metadatos la fila seleccionada.
-        """
-        if not self._rows or self.metadata_callback is None:
-            return
-
-        try:
-            r, c = self.sheet.get_currently_selected()
-        except Exception:
-            return
-
-        if isinstance(r, int) and 0 <= r < len(self._rows):
-            row = self._rows[r]
-            self.metadata_callback(row)

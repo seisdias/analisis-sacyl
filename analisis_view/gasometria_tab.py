@@ -5,12 +5,14 @@
 Pestaña de Gasometría.
 
 - Usa BaseAnalysisTab como contenedor de tksheet.
-- Depende directamente de db.list_gasometria(), como en la implementación original.
+- Depende directamente de db.list_gasometria().
+- Oculta campos internos como 'id' y 'analisis_id'.
+- Prioriza columnas de metadatos de análisis (fecha_analisis, numero_peticion, origen).
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 import logging
 
 from .base_tab import BaseAnalysisTab
@@ -53,8 +55,18 @@ class GasometriaTab(BaseAnalysisTab):
 
         first = rows[0]
         if isinstance(first, dict):
-            fields = [k for k in first.keys() if k != "id"]
-            headers = [k for k in fields]
+            # Metacampos que queremos delante si existen
+            meta_order = ["fecha_analisis", "numero_peticion", "origen"]
+
+            keys = list(first.keys())
+            # Quitamos ids internos
+            keys = [k for k in keys if k not in ("id", "analisis_id")]
+
+            meta_fields = [k for k in meta_order if k in keys]
+            other_fields = [k for k in keys if k not in meta_fields]
+
+            fields = meta_fields + other_fields
+            headers = fields  # de momento usamos nombres crudos
             data = [[r.get(f, "") for f in fields] for r in rows]
         else:
             # Si son tuplas, no sabemos el orden exacto -> mostramos tal cual

@@ -4,7 +4,7 @@
 """
 Vista principal de análisis de laboratorio.
 
-- Contiene un panel superior de metadatos (fecha, nº petición, origen).
+- Contiene un panel superior con datos del paciente.
 - Contiene un Notebook con 4 pestañas:
     • Hematología (HematologyTab)
     • Bioquímica (BioquimicaTab)
@@ -34,7 +34,7 @@ class AnalisisView(ttk.Frame):
     """
     Frame principal:
 
-      - Panel superior con metadatos comunes (fecha, nº petición, origen).
+      - Panel superior con datos del paciente.
       - Notebook con pestañas por tipo de análisis.
     """
 
@@ -50,8 +50,8 @@ class AnalisisView(ttk.Frame):
         self.db: Optional[HematologyDB] = db
         self.ranges_manager: Optional[RangesManager] = ranges_manager
 
-        # Panel de metadatos
-        self.meta_frame = self._create_meta_frame()
+        # Panel de datos del paciente
+        self.meta_frame = self._create_patient_frame()
         self.meta_frame.pack(fill="x", side="top")
 
         # Notebook
@@ -63,7 +63,6 @@ class AnalisisView(ttk.Frame):
             self.notebook,
             db=self.db,
             ranges_manager=self.ranges_manager,
-            metadata_callback=self._set_metadata_from_row,
         )
         self.notebook.add(self.tab_hema, text="Hematología")
 
@@ -76,16 +75,20 @@ class AnalisisView(ttk.Frame):
         self.tab_orina = OrinaTab(self.notebook, db=self.db)
         self.notebook.add(self.tab_orina, text="Orina")
 
+        # Inicializamos panel de paciente
+        self._update_patient_info()
+
     # ------------------------------------------------------------
-    #   Panel de metadatos
+    #   Panel de datos del paciente
     # ------------------------------------------------------------
-    def _create_meta_frame(self) -> ttk.LabelFrame:
-        frame = ttk.LabelFrame(self, text="Datos del análisis")
+    def _create_patient_frame(self) -> ttk.LabelFrame:
+        frame = ttk.LabelFrame(self, text="Datos del paciente")
 
         self.meta_labels: Dict[str, ttk.Label] = {
-            "fecha": ttk.Label(frame, text="Fecha: -"),
-            "peticion": ttk.Label(frame, text="Nº petición: -"),
-            "origen": ttk.Label(frame, text="Origen: -"),
+            "paciente": ttk.Label(frame, text="Paciente: -"),
+            "nhc": ttk.Label(frame, text="Nº historia: -"),
+            "fnac": ttk.Label(frame, text="Fecha nac.: -"),
+            "sexo": ttk.Label(frame, text="Sexo: -"),
         }
 
         for lbl in self.meta_labels.values():
@@ -93,14 +96,41 @@ class AnalisisView(ttk.Frame):
 
         return frame
 
-    def _set_metadata_from_row(self, row: Dict[str, Any]) -> None:
-        fecha = row.get("fecha_extraccion") or "-"
-        peticion = row.get("numero_peticion") or "-"
-        origen = row.get("origen") or "-"
+    def _set_patient_info(self, patient: Optional[Dict[str, Any]]) -> None:
+        if not patient:
+            self.meta_labels["paciente"].configure(text="Paciente: -")
+            self.meta_labels["nhc"].configure(text="Nº historia: -")
+            self.meta_labels["fnac"].configure(text="Fecha nac.: -")
+            self.meta_labels["sexo"].configure(text="Sexo: -")
+            return
 
-        self.meta_labels["fecha"].configure(text=f"Fecha: {fecha}")
-        self.meta_labels["peticion"].configure(text=f"Nº petición: {peticion}")
-        self.meta_labels["origen"].configure(text=f"Origen: {origen}")
+        nombre = patient.get("nombre") or ""
+        apellidos = patient.get("apellidos") or ""
+        paciente_txt = (nombre + " " + apellidos).strip() or "-"
+
+        nhc = patient.get("numero_historia") or "-"
+        fnac = patient.get("fecha_nacimiento") or "-"
+        sexo = patient.get("sexo") or "-"
+
+        self.meta_labels["paciente"].configure(text=f"Paciente: {paciente_txt}")
+        self.meta_labels["nhc"].configure(text=f"Nº historia: {nhc}")
+        self.meta_labels["fnac"].configure(text=f"Fecha nac.: {fnac}")
+        self.meta_labels["sexo"].configure(text=f"Sexo: {sexo}")
+
+    def _update_patient_info(self) -> None:
+        """
+        Consulta la BD para obtener los datos del paciente y actualiza el panel.
+        """
+        if self.db is None or not getattr(self.db, "is_open", False):
+            self._set_patient_info(None)
+            return
+
+        patient: Optional[Dict[str, Any]] = None
+        try:
+            patient = self.db.get_patient()
+        except Exception:
+            logger.exception("Error obteniendo datos del paciente")
+        self._set_patient_info(patient)
 
     # ------------------------------------------------------------
     #   API pública
@@ -111,6 +141,7 @@ class AnalisisView(ttk.Frame):
         self.tab_bioq.set_db(db)
         self.tab_gaso.set_db(db)
         self.tab_orina.set_db(db)
+        self._update_patient_info()
 
     def set_ranges_manager(self, ranges_manager: RangesManager) -> None:
         self.ranges_manager = ranges_manager
@@ -118,26 +149,23 @@ class AnalisisView(ttk.Frame):
 
     def clear(self) -> None:
         """
-        Limpia todas las pestañas y resetea el panel de metadatos.
+        Limpia todas las pestañas y resetea el panel de datos del paciente.
         """
         self.tab_hema.clear()
         self.tab_bioq.clear()
         self.tab_gaso.clear()
         self.tab_orina.clear()
 
-        self._set_metadata_from_row(
-            {
-                "fecha_extraccion": "-",
-                "numero_peticion": "-",
-                "origen": "-",
-            }
-        )
+        self._set_patient_info(None)
 
     def refresh(self) -> None:
         """
         Recarga los datos desde la BD en todas las pestañas.
         """
         logger.debug("AnalisisView.refresh()")
+
+        # Actualizamos datos del paciente
+        self._update_patient_info()
 
         if self.db is None or not getattr(self.db, "is_open", False):
             self.clear()
