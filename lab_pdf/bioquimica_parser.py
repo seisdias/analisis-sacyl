@@ -26,7 +26,9 @@ def parse_bioquimica_section(texto: str) -> Dict[str, Optional[float]]:
     data["potasio"] = extract_float(r"Potasio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
 
     # En los informes reales es "Cloruro"
-    data["cloruro"] = extract_float(r"Cloruro\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["cloro"] = extract_float(
+        r"(?:Cloro|Cloruro)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+    )
 
     # Calcio / Fosfato (puede aparecer como Fosfato/Fósforo/Fosforo)
     data["calcio"] = extract_float(r"Calcio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+mg/dL", texto)
