@@ -6,3 +6,4 @@ __pycache__/
 .idea/
 *.pyc         # Ignora archivos .pyc sueltos
 
+fix-authors.sh
