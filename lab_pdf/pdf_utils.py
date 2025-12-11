@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from typing import Dict, Any, Optional
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 
 # ============================================================
