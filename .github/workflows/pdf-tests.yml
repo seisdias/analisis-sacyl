@@ -1,4 +1,4 @@
-name: DB tests
+name: PDF parsing tests
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - dev
 
 jobs:
-  run-db-tests:
+  run-pdf-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,9 +28,9 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
 
-      - name: Run DB tests with coverage (min 80%)
+      - name: Run pytest for lab_pdf with coverage (min 80%)
         run: |
-          python -m pytest tests/test_db \
-            --cov=db \
+          python -m pytest tests/test_lab_pdf \
+            --cov=lab_pdf \
             --cov-report=term-missing \
             --cov-fail-under=80

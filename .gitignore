@@ -1,5 +1,4 @@
 *.db
-*.pdf
 *.log
 /build/
 __pycache__/
