@@ -12,16 +12,24 @@ from analisis_view.data_utils import (
 )
 
 
+# ---------------------------------------------------------------------------
+# Fakes para simular la BD
+# ---------------------------------------------------------------------------
+
 class FakeDBDict:
+    """Simula una BD que devuelve filas como dicts."""
+
     def __init__(self, rows):
         self._rows = rows
 
     def list_hematologia(self, limit: int = 1000):
-        # Ignoramos limit para simplificar
+        # Ignoramos limit para simplificar en los tests
         return self._rows
 
 
 class FakeDBTuple:
+    """Simula una BD que devuelve filas como tuplas."""
+
     def __init__(self, rows):
         self._rows = rows
 
@@ -35,7 +43,12 @@ class RangeParam:
     max_value: float | None
 
 
+# ---------------------------------------------------------------------------
+# Tests de get_rows_generic
+# ---------------------------------------------------------------------------
+
 def test_get_rows_generic_dict_sorted_by_fecha():
+    # Filas desordenadas por fecha
     rows = [
         {"id": 2, "fecha_extraccion": "2025-01-10", "valor": 20},
         {"id": 1, "fecha_extraccion": "2025-01-01", "valor": 10},
@@ -50,6 +63,7 @@ def test_get_rows_generic_dict_sorted_by_fecha():
         fields_order=fields_order,
     )
 
+    # Deben quedar ordenados por fecha_extraccion ascendente
     assert [r["id"] for r in result] == [1, 2]
     assert [r["valor"] for r in result] == [10, 20]
 
@@ -73,20 +87,62 @@ def test_get_rows_generic_tuples_mapping_and_len_mismatch():
 
     assert len(result) == 2
     assert result[0]["id"] == 1
+    assert result[0]["valor"] == 10.0
     assert result[1]["id"] == 2
+    assert result[1]["valor"] == 20.0
 
+
+def test_get_rows_generic_returns_empty_on_missing_method():
+    db = FakeDBDict([])
+
+    result = get_rows_generic(
+        db=db,
+        list_method_name="metodo_inexistente",
+        fallback_name=None,
+        fields_order=["id"],
+    )
+
+    assert result == []
+
+
+def test_get_rows_generic_uses_fallback_method():
+    class FakeDBWithFallback:
+        def list_fallback(self, limit: int = 1000):
+            return [{"id": 1, "fecha_extraccion": "2025-01-01"}]
+
+    db = FakeDBWithFallback()
+
+    result = get_rows_generic(
+        db=db,
+        list_method_name="no_existe",
+        fallback_name="list_fallback",
+        fields_order=["id", "fecha_extraccion"],
+    )
+
+    assert len(result) == 1
+    assert result[0]["id"] == 1
+    assert result[0]["fecha_extraccion"] == "2025-01-01"
+
+
+# ---------------------------------------------------------------------------
+# Tests de is_value_out_of_range
+# ---------------------------------------------------------------------------
 
 def test_is_value_out_of_range_basic_cases():
     ranges: Dict[str, Any] = {
         "hemoglobina": RangeParam(min_value=12.0, max_value=18.0),
     }
 
+    # Debajo de mínimo
     assert is_value_out_of_range("hemoglobina", "11.9", ranges) is True
+    # En el límite inferior
     assert is_value_out_of_range("hemoglobina", "12", ranges) is False
+    # En el límite superior
     assert is_value_out_of_range("hemoglobina", "18", ranges) is False
+    # Por encima del máximo
     assert is_value_out_of_range("hemoglobina", "18.1", ranges) is True
 
-    # Valores vacíos o no numéricos -> no fuera de rango
+    # Valores vacíos o no numéricos -> no se consideran fuera de rango
     assert is_value_out_of_range("hemoglobina", "", ranges) is False
     assert is_value_out_of_range("hemoglobina", None, ranges) is False
     assert is_value_out_of_range("hemoglobina", "abc", ranges) is False
@@ -94,6 +150,20 @@ def test_is_value_out_of_range_basic_cases():
     # Campo sin rango definido -> siempre False
     assert is_value_out_of_range("campo_inexistente", "15", ranges) is False
 
+
+def test_is_value_out_of_range_acepta_coma_decimal():
+    ranges: Dict[str, Any] = {
+        "hemoglobina": RangeParam(min_value=12.0, max_value=18.0),
+    }
+
+    # Usando coma decimal
+    assert is_value_out_of_range("hemoglobina", "11,5", ranges) is True
+    assert is_value_out_of_range("hemoglobina", "12,5", ranges) is False
+
+
+# ---------------------------------------------------------------------------
+# Tests de compute_out_of_range_cells
+# ---------------------------------------------------------------------------
 
 def test_compute_out_of_range_cells_returns_coordinates():
     rows: List[Dict[str, Any]] = [
@@ -114,3 +184,12 @@ def test_compute_out_of_range_cells_returns_coordinates():
     assert (1, 1) in cells
     # (1, 0) está dentro de rango y no debería aparecer
     assert (1, 0) not in cells
+
+
+def test_compute_out_of_range_cells_empty_ranges():
+    rows = [{"campo": "10"}]
+    fields = ["campo"]
+    ranges: Dict[str, Any] = {}
+
+    cells = compute_out_of_range_cells(rows, fields, ranges)
+    assert cells == []
