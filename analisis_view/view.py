@@ -12,6 +12,8 @@ Vista de análisis de laboratorio usando tksheet.Sheet
 - Cada pestaña es una tabla tipo hoja de cálculo (Sheet).
 - La pestaña de Hematología pinta en rojo las celdas fuera de rango
   según ranges_config.RangesManager.
+- Encima del Notebook hay un panel de metadatos comunes al análisis
+  (fecha, nº petición, origen), que actúa como "panel fijo" tipo Excel.
 """
 
 from __future__ import annotations
@@ -32,6 +34,9 @@ from .config import (
     HEMA_HEADERS,
     BIOQ_HEADERS,
     ORINA_HEADERS,
+    HEMA_VISIBLE_FIELDS,
+    BIOQ_VISIBLE_FIELDS,
+    ORINA_VISIBLE_FIELDS,
 )
 from .data_utils import get_rows_generic, compute_out_of_range_cells
 
@@ -45,6 +50,11 @@ class AnalisisView(ttk.Frame):
       - Bioquímica
       - Gasometría
       - Orina
+
+    Además, incluye un panel superior con metadatos comunes del análisis:
+      - Fecha
+      - Nº petición
+      - Origen
     """
 
     def __init__(
@@ -59,6 +69,15 @@ class AnalisisView(ttk.Frame):
         self.db: Optional[HematologyDB] = db
         self.ranges_manager: Optional[RangesManager] = ranges_manager
 
+        # Guardamos las filas para poder acceder a ellas desde eventos de selección
+        self._hema_rows: List[Dict[str, Any]] = []
+        self._bioq_rows: List[Dict[str, Any]] = []
+        self._orina_rows: List[Dict[str, Any]] = []
+
+        # Panel de metadatos comunes (tipo "panel fijo" Excel)
+        self.meta_frame = self._create_meta_frame()
+        self.meta_frame.pack(fill="x", side="top")
+
         # Notebook con pestañas
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True)
@@ -67,6 +86,13 @@ class AnalisisView(ttk.Frame):
         self.tab_hema = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_hema, text="Hematología")
         self.sheet_hema = self._create_sheet(self.tab_hema)
+
+        # Binding extra: actualizar metadatos al seleccionar una celda
+        self.sheet_hema.extra_bindings(
+            [
+                ("cell_select", self._on_hema_cell_select),
+            ]
+        )
 
         # ---- Pestaña Bioquímica ----
         self.tab_bioq = ttk.Frame(self.notebook)
@@ -82,6 +108,43 @@ class AnalisisView(ttk.Frame):
         self.tab_orina = ttk.Frame(self.notebook)
         self.notebook.add(self.tab_orina, text="Orina")
         self.sheet_orina = self._create_sheet(self.tab_orina)
+
+    # ============================================================
+    #   Panel de metadatos comunes
+    # ============================================================
+    def _create_meta_frame(self) -> ttk.LabelFrame:
+        """
+        Crea el marco superior que muestra metadatos comunes al análisis:
+        fecha, nº de petición, origen, etc.
+        """
+        frame = ttk.LabelFrame(self, text="Datos del análisis")
+
+        self.meta_labels: Dict[str, ttk.Label] = {
+            "fecha": ttk.Label(frame, text="Fecha: -"),
+            "peticion": ttk.Label(frame, text="Nº petición: -"),
+            "origen": ttk.Label(frame, text="Origen: -"),
+        }
+
+        # Distribuimos las etiquetas en línea
+        for lbl in self.meta_labels.values():
+            lbl.pack(side="left", padx=5, pady=2)
+
+        return frame
+
+    def _set_metadata_from_row(self, row: Dict[str, Any]) -> None:
+        """
+        Actualiza el panel de metadatos a partir de una fila de resultados.
+
+        Se asume que la fila procede de hematología (aunque podría reutilizarse
+        con otros tipos si tienen los mismos campos).
+        """
+        fecha = row.get("fecha_extraccion") or "-"
+        peticion = row.get("numero_peticion") or "-"
+        origen = row.get("origen") or "-"
+
+        self.meta_labels["fecha"].configure(text=f"Fecha: {fecha}")
+        self.meta_labels["peticion"].configure(text=f"Nº petición: {peticion}")
+        self.meta_labels["origen"].configure(text=f"Origen: {origen}")
 
     # ============================================================
     #   Fabricación de Sheet
@@ -120,10 +183,23 @@ class AnalisisView(ttk.Frame):
         self.ranges_manager = ranges_manager
 
     def clear(self) -> None:
-        """Limpia todas las pestañas."""
+        """Limpia todas las pestañas y resetea el panel de metadatos."""
         for sheet in (self.sheet_hema, self.sheet_bioq, self.sheet_gaso, self.sheet_orina):
             sheet.set_sheet_data([])
             sheet.headers([])
+
+        self._hema_rows = []
+        self._bioq_rows = []
+        self._orina_rows = []
+
+        # Limpiamos también los metadatos
+        self._set_metadata_from_row(
+            {
+                "fecha_extraccion": "-",
+                "numero_peticion": "-",
+                "origen": "-",
+            }
+        )
 
     def refresh(self) -> None:
         """
@@ -151,13 +227,15 @@ class AnalisisView(ttk.Frame):
             fields_order=HEMA_FIELDS,
         )
 
+        self._hema_rows = rows
+
         if not rows:
             self.sheet_hema.set_sheet_data([])
             self.sheet_hema.headers([])
             return
 
-        # No mostramos el ID en la tabla
-        fields = HEMA_FIELDS[1:]
+        # Utilizamos sólo los campos visibles (sin id, sin origen)
+        fields = HEMA_VISIBLE_FIELDS
         headers = [HEMA_HEADERS.get(f, f) for f in fields]
 
         data: List[List[Any]] = []
@@ -204,6 +282,29 @@ class AnalisisView(ttk.Frame):
 
         self.sheet_hema.redraw()
 
+        # Actualizamos el panel de metadatos con el último análisis (más reciente)
+        if rows:
+            self._set_metadata_from_row(rows[-1])
+
+    def _on_hema_cell_select(self, event: Any) -> None:
+        """
+        Callback al seleccionar una celda en la hoja de hematología.
+        Actualiza el panel de metadatos con la fila seleccionada.
+        """
+        if not self._hema_rows:
+            return
+
+        try:
+            r, c = self.sheet_hema.get_currently_selected()
+        except Exception:
+            return
+
+        if not isinstance(r, int) or r < 0 or r >= len(self._hema_rows):
+            return
+
+        row = self._hema_rows[r]
+        self._set_metadata_from_row(row)
+
     # ============================================================
     #   Bioquímica
     # ============================================================
@@ -211,6 +312,7 @@ class AnalisisView(ttk.Frame):
         if not hasattr(self.db, "list_bioquimica"):
             self.sheet_bioq.set_sheet_data([])
             self.sheet_bioq.headers([])
+            self._bioq_rows = []
             return
 
         rows = get_rows_generic(
@@ -220,12 +322,14 @@ class AnalisisView(ttk.Frame):
             fields_order=BIOQ_FIELDS,
         )
 
+        self._bioq_rows = rows
+
         if not rows:
             self.sheet_bioq.set_sheet_data([])
             self.sheet_bioq.headers([])
             return
 
-        fields = BIOQ_FIELDS[1:]  # sin id
+        fields = BIOQ_VISIBLE_FIELDS
         headers = [BIOQ_HEADERS.get(f, f) for f in fields]
 
         data: List[List[Any]] = []
@@ -294,6 +398,7 @@ class AnalisisView(ttk.Frame):
         if self.db is None or not hasattr(self.db, "list_orina"):
             self.sheet_orina.set_sheet_data([])
             self.sheet_orina.headers([])
+            self._orina_rows = []
             return
 
         rows = get_rows_generic(
@@ -303,12 +408,14 @@ class AnalisisView(ttk.Frame):
             fields_order=ORINA_FIELDS,
         )
 
+        self._orina_rows = rows
+
         if not rows:
             self.sheet_orina.set_sheet_data([])
             self.sheet_orina.headers([])
             return
 
-        fields = ORINA_FIELDS[1:]  # sin id
+        fields = ORINA_VISIBLE_FIELDS
         headers = [ORINA_HEADERS.get(f, f) for f in fields]
 
         data: List[List[Any]] = []

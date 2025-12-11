@@ -6,13 +6,21 @@ Configuración de campos y cabeceras legibles para las tablas de análisis.
 
 Se mantiene la estructura original de AnalisisView, separada de la lógica de
 datos y de la capa de interfaz gráfica.
+
+Además se distinguen:
+- FIELDS: todos los campos de la tabla (incluyendo metadatos).
+- VISIBLE_FIELDS: campos que se muestran en la tabla (sin id y sin metadatos
+  que consideramos “globales” como 'origen').
 """
 
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import Dict, List
 
+# ---------------------------------------------------------------------------
 # Orden de campos esperados para cada tabla (según db_manager)
+# ---------------------------------------------------------------------------
+
 HEMA_FIELDS: List[str] = [
     "id",
     "fecha_extraccion",
@@ -86,7 +94,36 @@ ORINA_FIELDS: List[str] = [
     "albumina_ur",
 ]
 
+# ---------------------------------------------------------------------------
+# Campos visibles en las tablas (sin id y sin algunos metadatos)
+# ---------------------------------------------------------------------------
+
+# En hematología, ocultamos 'id' y 'origen' de la tabla (este último lo
+# mostraremos en el panel de metadatos comunes).
+HEMA_VISIBLE_FIELDS: List[str] = [
+    f
+    for f in HEMA_FIELDS
+    if f not in ("id", "origen")
+]
+
+# En bioquímica y orina de momento sólo ocultamos 'id'; si decides que
+# 'numero_peticion' también es metadato global, bastaría con añadirlo aquí.
+BIOQ_VISIBLE_FIELDS: List[str] = [
+    f
+    for f in BIOQ_FIELDS
+    if f not in ("id",)
+]
+
+ORINA_VISIBLE_FIELDS: List[str] = [
+    f
+    for f in ORINA_FIELDS
+    if f not in ("id",)
+]
+
+# ---------------------------------------------------------------------------
 # Mapeo a cabeceras legibles
+# ---------------------------------------------------------------------------
+
 HEMA_HEADERS: Dict[str, str] = {
     "fecha_extraccion": "Fecha",
     "numero_peticion": "Nº petición",
