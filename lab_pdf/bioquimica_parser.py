@@ -1,13 +1,31 @@
 # -*- coding: utf-8 -*-
 """
 Parser específico de la sección de BIOQUÍMICA (+ perfil lipídico).
+Robusto frente a asteriscos (*, **) y espaciado irregular típico de PDFs.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Dict, Optional
 
 from .pdf_utils import extract_float
+
+
+_NUM = r"([0-9]+(?:[.,][0-9]+)?)"
+STAR = r"(?:\*\s*)*"  # permite 0..N asteriscos, con espacios opcionales
+
+
+def _normalize_text(texto: str) -> str:
+    if not texto:
+        return ""
+    t = texto.replace("\u00A0", " ")  # NBSP
+    # separa asteriscos para que '**' sea '* *'
+    t = t.replace("*", " * ")
+    t = re.sub(r"[ \t]+", " ", t)
+    t = t.replace("\r\n", "\n").replace("\r", "\n")
+    t = re.sub(r"\n{2,}", "\n", t)
+    return t
 
 
 def parse_bioquimica_section(texto: str) -> Dict[str, Optional[float]]:
@@ -15,76 +33,81 @@ def parse_bioquimica_section(texto: str) -> Dict[str, Optional[float]]:
     Extrae parámetros de bioquímica / perfil lipídico a partir del texto
     de la sección de BIOQUÍMICA (y PERFIL LIPÍDICO si aparece).
     """
+    texto = _normalize_text(texto)
+
     data: Dict[str, Optional[float]] = {}
 
-    # Valores básicos
-    data["glucosa"] = extract_float(r"Glucosa\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["urea"] = extract_float(r"Urea\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["creatinina"] = extract_float(r"Creatinina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    # Básicos
+    data["glucosa"] = extract_float(rf"Glucosa\s*{STAR}{_NUM}\s+", texto)
+    data["urea"] = extract_float(rf"Urea\s*{STAR}{_NUM}\s+", texto)
+    data["creatinina"] = extract_float(rf"Creatinina\s*{STAR}{_NUM}\s+", texto)
 
-    data["sodio"] = extract_float(r"Sodio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
-    data["potasio"] = extract_float(r"Potasio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto)
+    data["sodio"] = extract_float(rf"Sodio\s*{STAR}{_NUM}\s+", texto)
+    data["potasio"] = extract_float(rf"Potasio\s*{STAR}{_NUM}\s+", texto)
 
-    # En los informes reales es "Cloruro"
+    # Cloro / Cloruro
     data["cloro"] = extract_float(
-        r"(?:Cloro|Cloruro)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
-    )
-
-    # Calcio / Fosfato (puede aparecer como Fosfato/Fósforo/Fosforo)
-    data["calcio"] = extract_float(r"Calcio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+mg/dL", texto)
-    data["fosfato"] = extract_float(
-        r"(?:Fosfato|Fósforo|Fosforo)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"(?:Cloro|Cloruro)\s*{STAR}{_NUM}\s+",
         texto,
     )
 
-    # Otros parámetros frecuentes
+    # Calcio / Fosfato-Fósforo
+    data["calcio"] = extract_float(rf"Calcio\s*{STAR}{_NUM}\s+mg\s*/\s*dL", texto)
+    data["fosfato"] = extract_float(
+        rf"(?:Fosfato|F[oó]sforo)\s*{STAR}{_NUM}\s+",
+        texto,
+    )
+
+    # Otros frecuentes
     data["acido_urico"] = extract_float(
-        r"Acido úrico\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+        rf"[Aa]cido\s+u[rú]rico\s*{STAR}{_NUM}\s+",
+        texto,
     )
     data["proteinas_totales"] = extract_float(
-        r"Proteínas totales\s+\**([0-9]+(?:[.,][0-9]+)?)\s+", texto
+        rf"Prote[ií]nas\s+totales\s*{STAR}{_NUM}\s+",
+        texto,
     )
 
     data["ast_got"] = extract_float(
-        r"Aspartato aminotransferasa \(AST/GOT\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Aspartato\s+aminotransferasa\s*\(AST\s*/\s*GOT\)\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["alt_gpt"] = extract_float(
-        r"Alanina aminotransferasa \(ALT/GPT\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Alanina\s+aminotransferasa\s*\(ALT\s*/\s*GPT\)\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["ggt"] = extract_float(
-        r"Gammaglutamil transferasa \(GGT\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Gammaglutamil\s+transferasa\s*\(GGT\)\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["bilirrubina_total"] = extract_float(
-        r"Bilirrubina Total\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Bilirrubina\s+Total\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["fosfatasa_alcalina"] = extract_float(
-        r"Fosfatasa alcalina\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Fosfatasa\s+alcalina\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["ldh"] = extract_float(
-        r"Lactato deshidrogenasa \(LDH\)\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Lactato\s+deshidrogenasa\s*\(LDH\)\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["magnesio"] = extract_float(
-        r"Magnesio\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Magnesio\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["pcr"] = extract_float(
-        r"Proteína C reactiva\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Prote[ií]na\s+C\s+reactiva\s*{STAR}{_NUM}\s+",
         texto,
     )
 
     # Perfil lipídico
     data["colesterol_total"] = extract_float(
-        r"Colesterol total\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Colesterol\s+total\s*{STAR}{_NUM}\s+",
         texto,
     )
     data["trigliceridos"] = extract_float(
-        r"Triglicéridos\s+\**([0-9]+(?:[.,][0-9]+)?)\s+",
+        rf"Triglic[eé]ridos\s*{STAR}{_NUM}\s+",
         texto,
     )
 
