@@ -12,7 +12,17 @@ from typing import Dict, Any, Optional
 
 PAT_NOMBRE = re.compile(r"Nombre:\s*(.*?)\s+Nº petición:", re.S)
 PAT_APELLIDOS = re.compile(r"Apellidos:\s*(.*?)\s+Doctor:", re.S)
-PAT_FECHA_SEXO_ORIGEN = re.compile(r"Fecha nacimiento:\s*([\d/]+)\s+Sexo:\s*([MF])\s+Origen:\s*(.*?)")
+#PAT_FECHA_SEXO_ORIGEN = re.compile(r"Fecha nacimiento:\s*([\d/]+)\s+Sexo:\s*([MF])\s+Origen:\s*(.*?)")
+PAT_FECHA_SEXO_ORIGEN = re.compile(
+    r"Fecha\s*nacimiento\s*:?\s*"
+    r"(\d{1,2}/\d{1,2}/\d{4})"
+    r".{0,40}?"                 # permite “basura”/espacios raros entre campos
+    r"Sexo\s*:?\s*([MF])"
+    r".{0,80}?"
+    r"Origen\s*:?\s*([^\r\n]+)", # captura origen hasta fin de línea
+    re.IGNORECASE | re.DOTALL
+)
+
 PAT_NHIST = re.compile(r"Nº Historia:\s*([^\n\r]+)")
 
 
