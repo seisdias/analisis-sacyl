@@ -66,13 +66,24 @@ class AnalisisView(ttk.Frame):
         )
         self.notebook.add(self.tab_hema, text="Hematología")
 
-        self.tab_bioq = BioquimicaTab(self.notebook, db=self.db)
+        self.tab_bioq = BioquimicaTab(
+            self.notebook,
+            db=self.db,
+            ranges_manager=self.ranges_manager,
+        )
         self.notebook.add(self.tab_bioq, text="Bioquímica")
 
-        self.tab_gaso = GasometriaTab(self.notebook, db=self.db)
+        self.tab_gaso = GasometriaTab(
+            self.notebook,
+            db=self.db,
+        )
         self.notebook.add(self.tab_gaso, text="Gasometría")
 
-        self.tab_orina = OrinaTab(self.notebook, db=self.db)
+        self.tab_orina = OrinaTab(
+            self.notebook,
+            db=self.db,
+            ranges_manager=self.ranges_manager,
+        )
         self.notebook.add(self.tab_orina, text="Orina")
 
         # Inicializamos panel de paciente
@@ -146,6 +157,8 @@ class AnalisisView(ttk.Frame):
     def set_ranges_manager(self, ranges_manager: RangesManager) -> None:
         self.ranges_manager = ranges_manager
         self.tab_hema.set_ranges_manager(ranges_manager)
+        self.tab_bioq.set_ranges_manager(ranges_manager)
+        self.tab_orina.set_ranges_manager(ranges_manager)
 
     def clear(self) -> None:
         """

@@ -1,33 +1,45 @@
 # analisis_view/orina_tab.py
 # -*- coding: utf-8 -*-
 
-"""
-Pestaña de Orina.
-
-- Usa BaseAnalysisTab como contenedor de tksheet.
-- Carga los datos de la BD con get_rows_generic.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import logging
 
+from ranges_config import RangesManager  # type: ignore
+
 from .base_tab import BaseAnalysisTab
-from .config import ORINA_FIELDS, ORINA_VISIBLE_FIELDS, ORINA_HEADERS
-from .data_utils import get_rows_generic
+from .data_utils import compute_out_of_range_cells
 
 logger = logging.getLogger(__name__)
 
 
 class OrinaTab(BaseAnalysisTab):
     """
-    Pestaña de orina.
+    Pestaña Orina.
+
+    - Oculta campos internos: id, analisis_id
+    - Ordena columnas: fecha_analisis, numero_peticion, origen, (resto)
+    - Resalta fuera de rango con ranges_manager (solo numéricos: ph, densidad, sodio_ur, etc.)
+      Los cualitativos (NEGATIVO, +, ++) no se resaltan con el comparador actual.
     """
 
-    def __init__(self, master, db: Optional[Any] = None, **kwargs):
+    META_ORDER = ["fecha_analisis", "numero_peticion", "origen"]
+    HIDDEN_FIELDS = {"id", "analisis_id"}
+
+    def __init__(
+        self,
+        master,
+        db: Optional[Any] = None,
+        ranges_manager: Optional[RangesManager] = None,
+        **kwargs,
+    ):
         super().__init__(master, db=db, **kwargs)
+        self.ranges_manager: Optional[RangesManager] = ranges_manager
         self._rows: List[Dict[str, Any]] = []
+
+    def set_ranges_manager(self, ranges_manager: RangesManager) -> None:
+        self.ranges_manager = ranges_manager
 
     def get_rows(self) -> List[Dict[str, Any]]:
         return self._rows
@@ -43,25 +55,30 @@ class OrinaTab(BaseAnalysisTab):
             self.clear()
             return
 
-        rows = get_rows_generic(
-            db=self.db,
-            list_method_name="list_orina",
-            fallback_name=None,
-            fields_order=ORINA_FIELDS,
-        )
-
-        self._rows = rows
-
+        rows = self.db.list_orina(limit=1000)
         if not rows:
             self.clear()
             return
 
-        fields = ORINA_VISIBLE_FIELDS
-        headers = [ORINA_HEADERS.get(f, f) for f in fields]
+        first = rows[0]
+        if not isinstance(first, dict):
+            headers = [f"C{i}" for i in range(len(first))]
+            data = [list(t) for t in rows]
+            self.sheet.set_sheet_data(data=data, reset_col_positions=True, reset_row_positions=True, redraw=True)
+            self.sheet.headers(headers)
+            self.sheet.redraw()
+            self._rows = []
+            return
 
-        data: List[List[Any]] = []
-        for row in rows:
-            data.append([row.get(f, "") for f in fields])
+        self._rows = [dict(r) for r in rows]
+
+        keys = [k for k in first.keys() if k not in self.HIDDEN_FIELDS]
+        meta_fields = [k for k in self.META_ORDER if k in keys]
+        other_fields = [k for k in keys if k not in meta_fields]
+        fields = meta_fields + other_fields
+
+        headers = [self._header_for(k) for k in fields]
+        data: List[List[Any]] = [[r.get(f, "") for f in fields] for r in self._rows]
 
         self.sheet.set_sheet_data(
             data=data,
@@ -72,9 +89,43 @@ class OrinaTab(BaseAnalysisTab):
         self.sheet.headers(headers)
 
         for i in range(len(headers)):
-            if i == 0:
-                self.sheet.column_width(i, 110)
-            else:
-                self.sheet.column_width(i, 90)
+            self.sheet.column_width(i, 120 if fields[i] == "fecha_analisis" else 95)
+
+        try:
+            self.sheet.highlight_cells(cells="all", bg=None, fg=None, redraw=False)
+        except Exception:
+            pass
+
+        if self.ranges_manager is not None:
+            ranges = self.ranges_manager.get_all()
+            cells = compute_out_of_range_cells(self._rows, fields, ranges)
+            for r_idx, c_idx in cells:
+                try:
+                    self.sheet.highlight_cells(
+                        row=r_idx,
+                        column=c_idx,
+                        bg="#ffdddd",
+                        fg="red",
+                        redraw=False,
+                    )
+                except Exception:
+                    pass
 
         self.sheet.redraw()
+
+    @staticmethod
+    def _header_for(key: str) -> str:
+        mapping = {
+            "fecha_analisis": "Fecha",
+            "numero_peticion": "Nº petición",
+            "origen": "Origen",
+            "cuerpos_cetonicos": "Cuerpos cetónicos",
+            "leucocitos_ests": "Leucocitos est.",
+            "urobilinogeno": "Urobilinógeno",
+            "sodio_ur": "Sodio orina",
+            "creatinina_ur": "Creatinina orina",
+            "indice_albumina_creatinina": "Índice Alb/Cre",
+            "categoria_albuminuria": "Cat. albuminuria",
+            "albumina_ur": "Albúmina orina",
+        }
+        return mapping.get(key, key)
