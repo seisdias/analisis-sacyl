@@ -1,0 +1,20 @@
+[run]
+# Medimos cobertura sobre el paquete analisis_view,
+# pero omitimos los módulos de GUI (Tk / tksheet)
+omit =
+    analisis_view/base_tab.py
+    analisis_view/hematology_tab.py
+    analisis_view/bioquimica_tab.py
+    analisis_view/gasometria_tab.py
+    analisis_view/orina_tab.py
+    analisis_view/view.py
+
+[report]
+# Opcional: vuelve a omitirlos también en el informe
+omit =
+    analisis_view/base_tab.py
+    analisis_view/hematology_tab.py
+    analisis_view/bioquimica_tab.py
+    analisis_view/gasometria_tab.py
+    analisis_view/orina_tab.py
+    analisis_view/view.py

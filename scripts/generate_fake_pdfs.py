@@ -109,8 +109,8 @@ Interpretación: Hemocultivos NEGATIVOS.
 if __name__ == "__main__":
     base_dir = Path(__file__).parents[1] / "tests" / "data"
 
-    hemato_pdf = base_dir / "12383248W_20251111.pdf"
-    hemocultivos_pdf = base_dir / "12383248W_20251108_hemocultivos.pdf"
+    hemato_pdf = base_dir / "hemocultivos_20251111.pdf"
+    hemocultivos_pdf = base_dir / "hemocultivos_20251108_hemocultivos.pdf"
 
     write_pdf(hemato_pdf, HEMATO_PDF_TEXT)
     write_pdf(hemocultivos_pdf, HEMOCULTIVOS_PDF_TEXT)
