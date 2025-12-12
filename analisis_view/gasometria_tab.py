@@ -56,7 +56,7 @@ class GasometriaTab(BaseAnalysisTab):
         first = rows[0]
         if isinstance(first, dict):
             # Metacampos que queremos delante si existen
-            meta_order = ["fecha_analisis", "numero_peticion", "origen"]
+            meta_order = ["fecha_analisis", "numero_peticion"]
 
             keys = list(first.keys())
             # Quitamos ids internos
