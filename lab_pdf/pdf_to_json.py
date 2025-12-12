@@ -97,7 +97,6 @@ def parse_hematology_pdf(pdf_path: str) -> Dict[str, Any]:
             **hemat_vals,
         }
         result["hematologia"] = [hemat_record]
-        result["analisis"] = [hemat_record]  # compatibilidad
 
     if has_bio:
         bio_record = {

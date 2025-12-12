@@ -25,11 +25,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return "\n".join(chunks)
 
 
-def extract_float(pattern: str, texto: str, flags: int = 0) -> Optional[float]:
-    """
-    Aplica un patrón regex y devuelve el primer grupo capturado como float.
-    Si no encuentra nada, devuelve None.
-    """
+def extract_float(pattern: str, texto: str, flags: int = re.IGNORECASE) -> Optional[float]:
     m = re.search(pattern, texto, flags=flags)
     if not m:
         return None
