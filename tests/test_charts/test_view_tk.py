@@ -1,3 +1,5 @@
+import os
+import sys
 import tkinter as tk
 
 import pytest
@@ -15,11 +17,25 @@ class FakeDb:
     def list_gasometria(self, limit=1000): return []
     def list_orina(self, limit=1000): return []
 
+def _has_display() -> bool:
+    # En Linux/CI, Tk requiere DISPLAY.
+    if sys.platform.startswith("linux"):
+        return bool(os.environ.get("DISPLAY"))
+    # En Windows/mac normalmente hay display
+    return True
+
 
 @pytest.fixture
 def tk_root():
-    root = tk.Tk()
-    root.withdraw()  # Importantísimo: no ventana real
+    if not _has_display():
+        pytest.skip("Tk tests skipped: no DISPLAY available (headless environment).")
+
+    try:
+        root = tk.Tk()
+    except tk.TclError as e:
+        pytest.skip(f"Tk tests skipped: cannot initialize Tk ({e}).")
+
+    root.withdraw()
     yield root
     root.destroy()
 
