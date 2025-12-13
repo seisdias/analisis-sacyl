@@ -70,7 +70,6 @@ class HematologyTab(BaseAnalysisTab):
         rows = get_rows_generic(
             db=self.db,
             list_method_name="list_hematologia",
-            fallback_name="list_analyses",  # compatibilidad con versiones antiguas
             fields_order=HEMA_FIELDS,
         )
 

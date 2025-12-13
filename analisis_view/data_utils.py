@@ -21,7 +21,6 @@ from typing import Any, Dict, List, Optional, Sequence
 def get_rows_generic(
     db: Any,
     list_method_name: str,
-    fallback_name: Optional[str],
     fields_order: List[str],
     limit: int = 1000,
 ) -> List[Dict[str, Any]]:
@@ -36,8 +35,6 @@ def get_rows_generic(
         return []
 
     method = getattr(db, list_method_name, None)
-    if method is None and fallback_name:
-        method = getattr(db, fallback_name, None)
 
     if method is None:
         return []

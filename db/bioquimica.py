@@ -49,4 +49,5 @@ class Bioquimica:
             params = (limit,)
 
         rows = cur.execute(sql, params).fetchall()
-        return [dict(r) for r in rows]
+        aux = [dict(r) for r in rows]
+        return aux

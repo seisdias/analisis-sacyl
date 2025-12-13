@@ -286,9 +286,6 @@ class AnalisisSACYLApp(tk.Tk):
         try:
             self.db = HematologyDB(str(path))
             self.db.open()
-            print("BIOQ keys:", self.db.list_bioquimica(limit=1)[0].keys())
-            print("ORINA keys:", self.db.list_orina(limit=1)[0].keys())
-            print("stop")
         except Exception as e:
             logger.exception("Error abriendo base de datos")
             messagebox.showerror(

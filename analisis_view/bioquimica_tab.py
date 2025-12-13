@@ -80,7 +80,18 @@ class BioquimicaTab(BaseAnalysisTab):
         fields = meta_fields + other_fields
 
         headers = [self._header_for(k) for k in fields]
-        data: List[List[Any]] = [[r.get(f, "") for f in fields] for r in self._rows]
+        data: List[List[Any]] = []
+        for r in self._rows:
+            row_values: List[Any] = []
+            for f in fields:
+                if f == "origen":
+                    val = r.get("origen") or ""
+                    if val == "" and "analisis_id" in r:
+                        val = self._get_origen_from_analisis(r.get("analisis_id")) or ""
+                    row_values.append(val)
+                else:
+                    row_values.append(r.get(f, ""))
+            data.append(row_values)
 
         self.sheet.set_sheet_data(
             data=data,
@@ -133,3 +144,26 @@ class BioquimicaTab(BaseAnalysisTab):
             "vitamina_b12": "Vitamina B12",
         }
         return mapping.get(key, key)
+
+    def _get_origen_from_analisis(self, analisis_id: Any) -> Optional[str]:
+        """
+        Intenta recuperar el origen desde la tabla/entidad 'analisis' usando analisis_id.
+        Si el DB no soporta el método, devuelve None.
+        """
+        if analisis_id is None or self.db is None:
+            return None
+
+        # Nombres de métodos que podríamos tener (según evolucione db_manager)
+        for method_name in ("get_analisis_by_id", "get_analisis", "get_analysis_by_id", "get_analysis"):
+            method = getattr(self.db, method_name, None)
+            if callable(method):
+                try:
+                    a = method(analisis_id)
+                    if isinstance(a, dict):
+                        return a.get("origen") or None
+                except Exception:
+                    return None
+        return None
+
+
+

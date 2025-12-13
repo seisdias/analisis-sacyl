@@ -59,7 +59,6 @@ def test_get_rows_generic_dict_sorted_by_fecha():
     result = get_rows_generic(
         db=db,
         list_method_name="list_hematologia",
-        fallback_name=None,
         fields_order=fields_order,
     )
 
@@ -81,7 +80,6 @@ def test_get_rows_generic_tuples_mapping_and_len_mismatch():
     result = get_rows_generic(
         db=db,
         list_method_name="list_bioquimica",
-        fallback_name=None,
         fields_order=fields_order,
     )
 
@@ -98,7 +96,6 @@ def test_get_rows_generic_returns_empty_on_missing_method():
     result = get_rows_generic(
         db=db,
         list_method_name="metodo_inexistente",
-        fallback_name=None,
         fields_order=["id"],
     )
 
@@ -115,7 +112,6 @@ def test_get_rows_generic_uses_fallback_method():
     result = get_rows_generic(
         db=db,
         list_method_name="no_existe",
-        fallback_name="list_fallback",
         fields_order=["id", "fecha_extraccion"],
     )
 

@@ -1,7 +1,9 @@
 # tests/test_db/test_analysis_db.py
 # -*- coding: utf-8 -*-
 
+import sqlite3
 import pytest
+
 
 
 def test_create_and_list_analisis(analysis_db):
@@ -66,5 +68,32 @@ def test_create_analisis_without_fecha_raises(analysis_db):
                 # falta fecha_analisis
                 "numero_peticion": "NO-FECHA",
                 "origen": "TEST",
+            }
+        )
+
+
+def test_unique_index_prevents_duplicate_analisis_rows(components):
+    """
+    La BD NO debe permitir duplicar (fecha_analisis, numero_peticion).
+    Si intentas insertar dos veces la misma pareja, debe fallar.
+    """
+    analisis = components["analisis"]
+
+    a1_id = analisis.create(
+        {
+            "fecha_analisis": "2025-01-08",
+            "numero_peticion": "65112214",
+            "origen": "A. Primaria",
+        }
+    )
+    assert isinstance(a1_id, int)
+
+    # Segundo insert con misma clave natural -> debe saltar IntegrityError
+    with pytest.raises(sqlite3.IntegrityError):
+        analisis.create(
+            {
+                "fecha_analisis": "2025-01-08",
+                "numero_peticion": "65112214",
+                "origen": None,
             }
         )
