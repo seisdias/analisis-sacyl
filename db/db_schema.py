@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS analisis (
     origen TEXT
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS ux_analisis_fecha_peticion
+ON analisis (fecha_analisis, numero_peticion);
+
+
 -- ================== PACIENTE ===================
 CREATE TABLE IF NOT EXISTS paciente (
     id INTEGER PRIMARY KEY,

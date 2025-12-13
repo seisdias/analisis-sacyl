@@ -39,14 +39,14 @@ def extract_float(pattern: str, texto: str, flags: int = re.IGNORECASE) -> Optio
 def extract_named_value(label: str, texto: str) -> Optional[float]:
     """
     Extrae el primer valor numérico de una línea que empieza por 'label'.
-    Ejemplo de línea:
-        Sodio 138 mmol/L 136 - 146
-    Buscamos el número inmediatamente después del nombre de la prueba.
+    Tolera asteriscos (*) entre el label y el valor, típicos de valores fuera de rango.
     """
-    pattern = rf"^{re.escape(label)}\s+([0-9]+(?:[.,][0-9]+)?)\s+"
+    # ^\s*LABEL\s+(?:\*+\s*)?NUM
+    pattern = rf"^\s*{re.escape(label)}\s+(?:\*+\s*)?([+-]?[0-9]+(?:[.,][0-9]+)?)\b"
     m = re.search(pattern, texto, flags=re.MULTILINE)
     if not m:
         return None
+
     valor_str = m.group(1).replace(",", ".")
     try:
         return float(valor_str)

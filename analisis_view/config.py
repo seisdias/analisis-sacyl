@@ -60,8 +60,6 @@ ORINA_FIELDS: List[str] = [
     "id",
     "fecha_analisis",
     "numero_peticion",
-    "color",
-    "aspecto",
     "ph",
     "densidad",
     "glucosa",
@@ -147,8 +145,6 @@ BIOQ_HEADERS: Dict[str, str] = {
 ORINA_HEADERS: Dict[str, str] = {
     "fecha_analisis": "Fecha",
     "numero_peticion": "Nº petición",
-    "color": "Color",
-    "aspecto": "Aspecto",
     "ph": "pH",
     "densidad": "Densidad",
     "glucosa": "Glucosa (tira)",
