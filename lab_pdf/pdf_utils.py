@@ -56,13 +56,27 @@ def extract_named_value(label: str, texto: str) -> Optional[float]:
 
 def extract_token(pattern: str, texto: str) -> Optional[str]:
     """
-    Devuelve el primer grupo capturado como texto (limpio) o None si no hay match.
-    Útil para campos cualitativos (NEGATIVO, TRAZAS, etc.).
+    Devuelve el primer grupo capturado útil (no None / no vacío) o None.
+    Soporta patrones donde el grupo 1 puede no participar.
     """
-    m = re.search(pattern, texto, flags=re.IGNORECASE)
+    m = re.search(pattern, texto, flags=re.IGNORECASE | re.MULTILINE)
     if not m:
         return None
-    return m.group(1).strip()
+
+    # Si hay grupos capturados, devuelve el primero "usable"
+    if m.lastindex:
+        for i in range(1, m.lastindex + 1):
+            g = m.group(i)
+            if g is not None:
+                g = g.strip()
+                if g != "":
+                    return g
+        return None
+
+    # Si no hay grupos, opcionalmente podrías devolver el match completo:
+    # return m.group(0).strip()
+    return None
+
 
 
 def has_any_value(d: Dict[str, Any], ignore_keys: tuple = ()) -> bool:
