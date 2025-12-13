@@ -20,9 +20,9 @@ $PYTHON -m pytest tests \
   --cov=analisis_view \
   --cov=ranges \
   --cov=ranges_config \
+  --cov=charts \
   --cov-report=term-missing \
   --cov-fail-under=80
-
 
 echo "==> Generando informe HTML de cobertura..."
 $PYTHON -m coverage html
