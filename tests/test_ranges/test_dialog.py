@@ -5,7 +5,11 @@ from ranges.manager import RangesManager
 from ranges.dialog import RangesDialog
 
 def test_dialog_can_be_created_and_destroyed():
-    root = tk.Tk()
+    try:
+        root = tk.Tk()
+    except tk.TclError as e:
+        pytest.skip(f"Tk no usable en este entorno: {e}")
+
     root.withdraw()
     try:
         dlg = RangesDialog(root, RangesManager())
@@ -13,3 +17,4 @@ def test_dialog_can_be_created_and_destroyed():
         dlg.destroy()
     finally:
         root.destroy()
+
