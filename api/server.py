@@ -2,19 +2,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from typing import Dict, Any, List
+
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
-from typing import Optional, Dict, Any, List
 
 from charts.defs import PARAM_DEFS, PARAM_GROUPS  # fuente de verdad :contentReference[oaicite:2]{index=2}
-from charts.series_provider import DbSeriesProvider  # acceso a series agnóstico de UI :contentReference[oaicite:3]{index=3}
+from charts.series_provider import \
+    DbSeriesProvider  # acceso a series agnóstico de UI :contentReference[oaicite:3]{index=3}
 
 app = FastAPI(title="salud_v1 API", version="0.2")
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from pathlib import Path
 from db import AnalysisDB
+from ranges import RangesManager
+
 
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
@@ -102,3 +105,26 @@ def series(
             "points": payload_points,
         }
     )
+
+@app.get("/ranges")
+def ranges() -> Dict[str, Any]:
+    """
+    Devuelve rangos de referencia por parámetro (min/max, unidad, etc.).
+    """
+    rm = RangesManager()
+    all_ranges = rm.get_all()
+
+    out: Dict[str, Any] = {}
+    for key, pr in all_ranges.items():
+        out[key] = {
+            "label": pr.label,
+            "category": pr.category,
+            "unit": pr.unit,
+            "min": pr.min_value,
+            "max": pr.max_value,
+        }
+
+    return {"ranges": out}
+
+
+
