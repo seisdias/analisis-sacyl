@@ -69,9 +69,9 @@ def parse_orina_section(texto: str) -> Dict[str, Any]:
     # - Si NO aparece, impedimos que el token empiece por "esteras..."
     leucocitos_ests = extract_token(
         rf"(?im)^\s*(?:"
-        rf"Leucocitos\s+esterasa(?:s)?\s*{STAR}{token}"
+        rf"Leucocitos\s+esterasa(?:s)?\s*{STAR}({token})"
         rf"|"
-        rf"Leucocitos\s*(?!esterasa(?:s)?\b)\s*{STAR}{token}"
+        rf"Leucocitos\s*(?!esterasa(?:s)?\b)\s*{STAR}({token})"
         rf")(?=\s|$)",
         texto,
     )
