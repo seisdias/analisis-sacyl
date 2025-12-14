@@ -13,11 +13,6 @@ def test_parse_hematology_pdf_complete_report(hemato_pdf_path: Path):
     assert "paciente" in data
     assert isinstance(data["paciente"], dict)
 
-    # Compatibilidad antigua: 'analisis' y nueva clave 'hematologia'
-    assert "analisis" in data
-    assert isinstance(data["analisis"], list)
-    assert len(data["analisis"]) >= 1
-
     assert "hematologia" in data
     assert isinstance(data["hematologia"], list)
     assert len(data["hematologia"]) >= 1
@@ -130,3 +125,100 @@ def test_parse_hematology_pdf_no_recognized_sections_raises(monkeypatch, tmp_pat
 
     with pytest.raises(ValueError):
         parse_hematology_pdf(str(fake_pdf))
+
+from pathlib import Path
+
+from lab_pdf.pdf_to_json import parse_hematology_pdf
+
+
+def test_parse_hematology_pdf_anonymized_report_hema_and_bio_values():
+    """
+    Verifica que el parser extrae correctamente hematología y bioquímica
+    desde un PDF anonimizado (sin datos personales reales).
+    """
+    from pathlib import Path
+    import pytest
+
+    # Import local (tal y como ya lo haces en este fichero)
+    # Ajusta si tu import real es distinto:
+    from lab_pdf.pdf_to_json import parse_hematology_pdf
+
+    pdf_path = Path(__file__).resolve().parents[1] / "data" / "sample_lab_report_2025_06_24.pdf"
+    assert pdf_path.exists(), f"No existe el PDF de test: {pdf_path}"
+
+    data = parse_hematology_pdf(str(pdf_path))
+
+    # Paciente: comprobamos que es ANONIMIZADO (no valores reales)
+    assert "paciente" in data
+    assert data["paciente"].get("nombre") in ("PACIENTE PRUEBA", "PACIENTE")  # depende de tu parse_patient
+    assert data["paciente"].get("apellidos") in (None, "APELLIDO FICTICIO")
+
+    # Debe haber hematología y bioquímica
+    assert "hematologia" in data and len(data["hematologia"]) == 1
+    assert "bioquimica" in data and len(data["bioquimica"]) == 1
+
+    hema = data["hematologia"][0]
+    bio = data["bioquimica"][0]
+
+    # --- Hematología esperada ---
+    assert hema["fecha_analisis"] == "2025-06-24"
+    assert hema["numero_peticion"] == "65122928"
+    assert hema["origen"] == "A. Primaria"
+
+    assert hema["leucocitos"] == pytest.approx(2.4)
+    assert hema["neutrofilos_pct"] == pytest.approx(20.2)
+    assert hema["linfocitos_pct"] == pytest.approx(76.2)
+    assert hema["monocitos_pct"] == pytest.approx(2.1)
+    assert hema["eosinofilos_pct"] == pytest.approx(1.2)
+    assert hema["basofilos_pct"] == pytest.approx(0.3)
+
+    assert hema["neutrofilos_abs"] == pytest.approx(0.5)
+    assert hema["linfocitos_abs"] == pytest.approx(1.8)
+    assert hema["monocitos_abs"] == pytest.approx(0.0)
+    assert hema["eosinofilos_abs"] == pytest.approx(0.0)
+    assert hema["basofilos_abs"] == pytest.approx(0.0)
+
+    assert hema["hematies"] == pytest.approx(3.56)
+    assert hema["hemoglobina"] == pytest.approx(13.0)
+    assert hema["hematocrito"] == pytest.approx(37.3)
+    assert hema["vcm"] == pytest.approx(104.8)
+    assert hema["hcm"] == pytest.approx(36.6)
+    assert hema["chcm"] == pytest.approx(34.9)
+    assert hema["rdw"] == pytest.approx(13.0)
+    assert hema["plaquetas"] == pytest.approx(183.0)
+    assert hema["vpm"] == pytest.approx(9.1)
+
+    # --- Bioquímica esperada ---
+    assert bio["fecha_analisis"] == "2025-06-24"
+    assert bio["numero_peticion"] == "65122928"
+
+    assert bio["glucosa"] == pytest.approx(84.0)
+    assert bio["urea"] == pytest.approx(58.1)
+    assert bio["creatinina"] == pytest.approx(0.82)
+    assert bio["sodio"] == pytest.approx(139.0)
+    assert bio["potasio"] == pytest.approx(4.1)
+    assert bio["cloro"] == pytest.approx(105.0)
+    assert bio["calcio"] == pytest.approx(9.4)
+    assert bio["fosforo"] == pytest.approx(3.31)
+    assert bio["acido_urico"] == pytest.approx(4.28)
+
+    # Estos dos en tu JSON eran null (y en el PDF anonimizado NO los escribimos), así que deben ser None
+    assert bio["ggt"] is None
+    assert bio["ast_got"] is None
+
+    assert bio["alt_gpt"] == pytest.approx(15.0)
+    assert bio["fosfatasa_alcalina"] == pytest.approx(44.0)
+    assert bio["bilirrubina_total"] == pytest.approx(1.16)
+
+    assert bio["colesterol_total"] == pytest.approx(131.0)
+    assert bio["colesterol_hdl"] == pytest.approx(58.0)
+    assert bio["colesterol_ldl"] == pytest.approx(61.0)
+    assert bio["colesterol_no_hdl"] == pytest.approx(73.0)
+    assert bio["trigliceridos"] == pytest.approx(61.0)
+    assert bio["indice_riesgo"] == pytest.approx(2.3)
+
+    assert bio["hierro"] == pytest.approx(131.0)
+    assert bio["ferritina"] == pytest.approx(552.2)
+    assert bio["vitamina_b12"] == pytest.approx(196.6)
+    assert bio["folico"] == pytest.approx(10.0)
+

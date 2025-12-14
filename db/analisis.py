@@ -28,25 +28,45 @@ class Analisis:
         self.conn.commit()
         return int(cur.lastrowid)
 
-    def ensure(self, d: Dict[str, Any]) -> int:
+    def ensure(self, d: dict) -> int:
         analisis_id = d.get("analisis_id")
-        if analisis_id is not None:
+        if analisis_id:
             return int(analisis_id)
 
         fecha = d.get("fecha_analisis")
-        numero_peticion = d.get("numero_peticion")
+        num = d.get("numero_peticion")
+        if not fecha or not num:
+            raise ValueError("Se requiere 'fecha_analisis' y 'numero_peticion' si no se indica 'analisis_id'.")
+
         origen = d.get("origen")
 
-        if not fecha:
-            raise ValueError("No se ha proporcionado analisis_id ni fecha_analisis.")
+        cur = self.conn.cursor()
+        row = cur.execute(
+            "SELECT id, origen FROM analisis WHERE fecha_analisis = ? AND numero_peticion = ?",
+            (fecha, num),
+        ).fetchone()
 
-        return self.create(
-            {
-                "fecha_analisis": fecha,
-                "numero_peticion": numero_peticion,
-                "origen": origen,
-            }
+        if row:
+            existing_id = int(row["id"])
+            existing_origen = row["origen"]
+
+            # “relleno tardío” del origen
+            if origen and (existing_origen is None or str(existing_origen).strip() == ""):
+                cur.execute(
+                    "UPDATE analisis SET origen = ? WHERE id = ?",
+                    (origen, existing_id),
+                )
+                self.conn.commit()
+
+            return existing_id
+
+        # Si no existe, crear (con origen si viene)
+        cur.execute(
+            "INSERT INTO analisis (fecha_analisis, numero_peticion, origen) VALUES (?, ?, ?)",
+            (fecha, num, origen),
         )
+        self.conn.commit()
+        return int(cur.lastrowid)
 
     def list(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         cur = self.conn.cursor()

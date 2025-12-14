@@ -25,11 +25,7 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     return "\n".join(chunks)
 
 
-def extract_float(pattern: str, texto: str, flags: int = 0) -> Optional[float]:
-    """
-    Aplica un patrón regex y devuelve el primer grupo capturado como float.
-    Si no encuentra nada, devuelve None.
-    """
+def extract_float(pattern: str, texto: str, flags: int = re.IGNORECASE) -> Optional[float]:
     m = re.search(pattern, texto, flags=flags)
     if not m:
         return None
@@ -43,14 +39,14 @@ def extract_float(pattern: str, texto: str, flags: int = 0) -> Optional[float]:
 def extract_named_value(label: str, texto: str) -> Optional[float]:
     """
     Extrae el primer valor numérico de una línea que empieza por 'label'.
-    Ejemplo de línea:
-        Sodio 138 mmol/L 136 - 146
-    Buscamos el número inmediatamente después del nombre de la prueba.
+    Tolera asteriscos (*) entre el label y el valor, típicos de valores fuera de rango.
     """
-    pattern = rf"^{re.escape(label)}\s+([0-9]+(?:[.,][0-9]+)?)\s+"
+    # ^\s*LABEL\s+(?:\*+\s*)?NUM
+    pattern = rf"^\s*{re.escape(label)}\s+(?:\*+\s*)?([+-]?[0-9]+(?:[.,][0-9]+)?)\b"
     m = re.search(pattern, texto, flags=re.MULTILINE)
     if not m:
         return None
+
     valor_str = m.group(1).replace(",", ".")
     try:
         return float(valor_str)
@@ -60,13 +56,27 @@ def extract_named_value(label: str, texto: str) -> Optional[float]:
 
 def extract_token(pattern: str, texto: str) -> Optional[str]:
     """
-    Devuelve el primer grupo capturado como texto (limpio) o None si no hay match.
-    Útil para campos cualitativos (NEGATIVO, TRAZAS, etc.).
+    Devuelve el primer grupo capturado útil (no None / no vacío) o None.
+    Soporta patrones donde el grupo 1 puede no participar.
     """
-    m = re.search(pattern, texto, flags=re.IGNORECASE)
+    m = re.search(pattern, texto, flags=re.IGNORECASE | re.MULTILINE)
     if not m:
         return None
-    return m.group(1).strip()
+
+    # Si hay grupos capturados, devuelve el primero "usable"
+    if m.lastindex:
+        for i in range(1, m.lastindex + 1):
+            g = m.group(i)
+            if g is not None:
+                g = g.strip()
+                if g != "":
+                    return g
+        return None
+
+    # Si no hay grupos, opcionalmente podrías devolver el match completo:
+    # return m.group(0).strip()
+    return None
+
 
 
 def has_any_value(d: Dict[str, Any], ignore_keys: tuple = ()) -> bool:

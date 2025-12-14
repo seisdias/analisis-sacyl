@@ -15,7 +15,7 @@ def hemato_pdf_path() -> Path:
     """
     Ruta al PDF de hemograma/bioquímica/gasometría completo (informe estándar).
     """
-    return DATA_DIR / "12383248W_20251111.pdf"
+    return DATA_DIR / "hemocultivos_20251111.pdf"
 
 
 @pytest.fixture(scope="session")
@@ -23,7 +23,7 @@ def hemocultivos_pdf_path() -> Path:
     """
     Ruta al PDF de hemocultivos, que NO debe parsearse como análisis estándar.
     """
-    return DATA_DIR / "12383248W_20251108_hemocultivos.pdf"
+    return DATA_DIR / "hemocultivos_20251108_hemocultivos.pdf"
 
 
 @pytest.fixture(scope="session")

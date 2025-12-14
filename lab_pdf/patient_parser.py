@@ -12,7 +12,17 @@ from typing import Dict, Any, Optional
 
 PAT_NOMBRE = re.compile(r"Nombre:\s*(.*?)\s+Nº petición:", re.S)
 PAT_APELLIDOS = re.compile(r"Apellidos:\s*(.*?)\s+Doctor:", re.S)
-PAT_FECHA_SEXO = re.compile(r"Fecha nacimiento:\s*([\d/]+)\s+Sexo:\s*([MF])")
+#PAT_FECHA_SEXO_ORIGEN = re.compile(r"Fecha nacimiento:\s*([\d/]+)\s+Sexo:\s*([MF])\s+Origen:\s*(.*?)")
+PAT_FECHA_SEXO_ORIGEN = re.compile(
+    r"Fecha\s*nacimiento\s*:?\s*"
+    r"(\d{1,2}/\d{1,2}/\d{4})"
+    r".{0,40}?"                 # permite “basura”/espacios raros entre campos
+    r"Sexo\s*:?\s*([MF])"
+    r".{0,80}?"
+    r"Origen\s*:?\s*([^\r\n]+)", # captura origen hasta fin de línea
+    re.IGNORECASE | re.DOTALL
+)
+
 PAT_NHIST = re.compile(r"Nº Historia:\s*([^\n\r]+)")
 
 
@@ -48,7 +58,7 @@ def parse_patient(text: str) -> Dict[str, Any]:
       - sexo
       - numero_historia (solo si cumple patrón HURH...)
     """
-    nombre = apellidos = fecha_nacimiento = sexo = numero_historia = None
+    nombre = apellidos = fecha_nacimiento = sexo = numero_historia = origen = None
 
     m = PAT_NOMBRE.search(text)
     if m:
@@ -58,10 +68,11 @@ def parse_patient(text: str) -> Dict[str, Any]:
     if m:
         apellidos = m.group(1).strip()
 
-    m = PAT_FECHA_SEXO.search(text)
+    m = PAT_FECHA_SEXO_ORIGEN.search(text)
     if m:
         raw_fecha = m.group(1).strip()  # p.ej. '23/06/1980'
         sexo = m.group(2).strip()
+        origen = m.group(3).strip()
         try:
             dt = datetime.strptime(raw_fecha, "%d/%m/%Y")
             fecha_nacimiento = dt.strftime("%Y-%m-%d")
@@ -79,4 +90,5 @@ def parse_patient(text: str) -> Dict[str, Any]:
         "fecha_nacimiento": fecha_nacimiento,
         "sexo": sexo,
         "numero_historia": numero_historia,
+        "origen": origen
     }
