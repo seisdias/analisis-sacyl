@@ -5,12 +5,12 @@ on:
     paths:
       - "charts/**"
       - "tests/test_charts/**"
-      - ".github/workflows/tests_charts.yml"
+      - ".github/workflows/charts-tests.yml"
   pull_request:
     paths:
       - "charts/**"
       - "tests/test_charts/**"
-      - ".github/workflows/tests_charts.yml"
+      - ".github/workflows/charts-tests.yml"
 
 jobs:
   test-charts:
