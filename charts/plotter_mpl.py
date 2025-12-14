@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 from matplotlib.figure import Figure
-from matplotlib.dates import DateFormatter
+from matplotlib.dates import AutoDateLocator, ConciseDateFormatter
 
 from .series_provider import SeriesPoint
 
@@ -34,14 +34,15 @@ class MatplotlibPlotter:
         fechas = [p.date for p in points]
         valores = [p.value for p in points]
 
-        # Evita warning marker duplicado
         ax.plot(fechas, valores, marker="o", linestyle="-")
 
-        ax.xaxis.set_major_formatter(DateFormatter("%Y-%m-%d"))
-        for label in ax.get_xticklabels():
-            label.set_rotation(45)
-            label.set_ha("right")
-            label.set_fontsize(8)
+        # --- Fechas: locator automático + formato compacto ---
+        locator = AutoDateLocator(minticks=3, maxticks=7)
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(ConciseDateFormatter(locator))
+
+        # Ajuste automático de rotación/espaciado
+        fig.autofmt_xdate(rotation=30, ha="right")
 
         ax.set_title(title, fontsize=10)
         ax.set_ylabel("Valor")
@@ -54,4 +55,8 @@ class MatplotlibPlotter:
             ax.axhspan(ymin, ymax, alpha=0.15)
 
         ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.6)
+
+        # Evita cortes de etiquetas en canvas pequeño
+        fig.tight_layout()
+
         return fig
