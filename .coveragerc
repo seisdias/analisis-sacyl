@@ -8,6 +8,7 @@ omit =
     analisis_view/gasometria_tab.py
     analisis_view/orina_tab.py
     analisis_view/view.py
+    ranges/dialog.py
 
 [report]
 # Opcional: vuelve a omitirlos también en el informe
