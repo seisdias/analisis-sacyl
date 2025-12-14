@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gráficas (nuevo)</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
+    header { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; display:flex; gap:12px; align-items:center; }
+    header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+    .pill { padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 999px; font-size: 12px; color:#374151; }
+    .layout { display: grid; grid-template-columns: 360px 1fr; height: calc(100vh - 57px); }
+    aside { border-right: 1px solid #e5e7eb; padding: 12px; overflow: auto; }
+    main { padding: 12px; }
+    .panel { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
+    .row { display:flex; gap:8px; align-items:center; margin-bottom: 10px; flex-wrap: wrap; }
+    select, input[type="search"] { padding: 8px 10px; border:1px solid #e5e7eb; border-radius: 10px; }
+    .list { display:flex; flex-direction:column; gap:6px; margin-top: 10px; }
+    label { display:flex; gap:8px; align-items:center; font-size: 13px; color:#111827; }
+    .muted { color:#6b7280; font-size: 12px; }
+    #chart { width: 100%; height: calc(100vh - 57px - 24px); }
+    button { padding: 8px 10px; border: 1px solid #e5e7eb; background: #fff; border-radius: 10px; cursor: pointer; }
+    button:hover { background: #f9fafb; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Gráficas (nuevo)</h1>
+  <span id="status" class="pill">Conectando…</span>
+  <span class="pill">ECharts</span>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="panel">
+      <div class="row">
+        <div style="flex:1;">
+          <div class="muted">Categoría</div>
+          <select id="groupSelect>>"></select>
+        </div>
+        <button id="btnAll">Mostrar todo</button>
+        <button id="btnNone">Ocultar todo</button>
+      </div>
+
+      <div class="row">
+        <div style="flex:1;">
+          <div class="muted">Buscar parámetro</div>
+          <input id="search" type="search" placeholder="Ej: hemoglobina, creatinina..." />
+        </div>
+      </div>
+
+      <div id="paramList" class="list"></div>
+      <div class="muted" style="margin-top:10px;">
+        Tip: Click en la leyenda para ocultar/mostrar líneas. Doble click para aislar una.
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div id="chart"></div>
+  </main>
+</div>
+
+<script>
+  // La app abre esta página pasando ?base=http://127.0.0.1:PUERTO
+  const urlParams = new URLSearchParams(window.location.search);
+  const base = urlParams.get("base") || "";
+  const statusEl = document.getElementById("status");
+
+  const groupSelect = document.getElementById("groupSelect>>"); // arreglamos abajo (typo)
+</script>
+
+<script>
+  // Fix del id (typo intencionado para que no falle silenciosamente si copias mal)
+  const _gs = document.getElementById("groupSelect>>");
+  _gs.id = "groupSelect";
+  const groupSelectFixed = document.getElementById("groupSelect");
+  const paramList = document.getElementById("paramList");
+  const search = document.getElementById("search");
+
+  const btnAll = document.getElementById("btnAll");
+  const btnNone = document.getElementById("btnNone");
+
+  const chartDom = document.getElementById("chart");
+  const chart = echarts.init(chartDom);
+
+  let META = null;
+  let currentGroup = null;
+  let enabledParams = new Set();
+
+  function setStatus(ok, text){
+    statusEl.textContent = text;
+    statusEl.style.borderColor = ok ? "#bbf7d0" : "#fecaca";
+    statusEl.style.color = ok ? "#166534" : "#991b1b";
+    statusEl.style.background = ok ? "#f0fdf4" : "#fef2f2";
+  }
+
+  async function apiGet(path){
+    const res = await fetch(`${base}${path}`);
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return await res.json();
+  }
+
+  function labelOf(param){
+    return (META && META.defs && META.defs[param] && META.defs[param].label) ? META.defs[param].label : param;
+  }
+
+  function buildGroupSelect(){
+    groupSelectFixed.innerHTML = "";
+    META.groups.forEach((g, idx) => {
+      const opt = document.createElement("option");
+      opt.value = g.name;
+      opt.textContent = g.name;
+      groupSelectFixed.appendChild(opt);
+    });
+    currentGroup = META.groups[0].name;
+    groupSelectFixed.value = currentGroup;
+  }
+
+  function buildParamList(){
+    const g = META.groups.find(x => x.name === currentGroup);
+    const query = (search.value || "").toLowerCase().trim();
+    const params = g.params.filter(p => !query || p.toLowerCase().includes(query) || labelOf(p).toLowerCase().includes(query));
+
+    paramList.innerHTML = "";
+    params.forEach(p => {
+      const id = `chk_${p}`;
+      const row = document.createElement("label");
+      row.innerHTML = `<input type="checkbox" id="${id}"> <span>${labelOf(p)}</span>`;
+      paramList.appendChild(row);
+
+      const cb = document.getElementById(id);
+      cb.checked = enabledParams.has(p);
+      cb.addEventListener("change", () => {
+        if(cb.checked) enabledParams.add(p);
+        else enabledParams.delete(p);
+        refreshChart();
+      });
+    });
+  }
+
+  async function fetchSeries(param){
+    const data = await apiGet(`/series?param=${encodeURIComponent(param)}&limit=10000`);
+    // points: [{date:'YYYY-MM-DD', value: number}]
+    return data.points.map(p => [p.date, p.value]);
+  }
+
+  function setDefaultEnabled(){
+    const g = META.groups.find(x => x.name === currentGroup);
+    enabledParams = new Set(g.params.slice(0, 4)); // por defecto 4 líneas
+  }
+
+  async function refreshChart(){
+    const params = Array.from(enabledParams);
+    const series = [];
+
+    for(const p of params){
+      const pts = await fetchSeries(p);
+      series.push({
+        name: labelOf(p),
+        type: "line",
+        smooth: true,
+        showSymbol: true,
+        symbolSize: 6,
+        data: pts,
+      });
+    }
+
+    const option = {
+      animation: true,
+      tooltip: { trigger: "axis" },
+      legend: { top: 10 },
+      grid: { top: 60, left: 60, right: 20, bottom: 60 },
+      xAxis: { type: "time" },
+      yAxis: { type: "value", scale: true },
+      dataZoom: [
+        { type: "inside", xAxisIndex: 0 },
+        { type: "slider", xAxisIndex: 0 }
+      ],
+      series
+    };
+
+    chart.setOption(option, true);
+  }
+
+  function bindEvents(){
+    groupSelectFixed.addEventListener("change", () => {
+      currentGroup = groupSelectFixed.value;
+      setDefaultEnabled();
+      buildParamList();
+      refreshChart();
+    });
+    search.addEventListener("input", () => buildParamList());
+
+    btnAll.addEventListener("click", () => {
+      const g = META.groups.find(x => x.name === currentGroup);
+      enabledParams = new Set(g.params);
+      buildParamList();
+      refreshChart();
+    });
+
+    btnNone.addEventListener("click", () => {
+      enabledParams = new Set();
+      buildParamList();
+      refreshChart();
+    });
+
+    window.addEventListener("resize", () => chart.resize());
+  }
+
+  async function init(){
+    try{
+      if(!base) throw new Error("Falta parámetro ?base= en la URL");
+      META = await apiGet("/meta");
+      setStatus(true, "Conectado");
+      buildGroupSelect();
+      setDefaultEnabled();
+      buildParamList();
+      bindEvents();
+      await refreshChart();
+    } catch(e){
+      console.error(e);
+      setStatus(false, "Error");
+      chart.setOption({
+        title: { text: "No se pudo cargar el dashboard", subtext: String(e), left: "center", top: "center" }
+      });
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
