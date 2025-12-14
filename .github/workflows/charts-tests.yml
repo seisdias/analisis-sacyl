@@ -2,15 +2,13 @@ name: Tests - Charts
 
 on:
   push:
-    paths:
-      - "charts/**"
-      - "tests/test_charts/**"
-      - ".github/workflows/charts-tests.yml"
-  pull_request:
-    paths:
-      - "charts/**"
-      - "tests/test_charts/**"
-      - ".github/workflows/charts-tests.yml"
+    branches:
+      - main
+      - dev
+    pull_request:
+      branches:
+        - main
+        - dev
 
 jobs:
   test-charts:

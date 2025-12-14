@@ -2,15 +2,13 @@ name: Tests - Ranges
 
 on:
   push:
-    paths:
-      - "ranges/**"
-      - "tests/test_ranges/**"
-      - ".github/workflows/ranges-tests.yml"
-  pull_request:
-    paths:
-      - "ranges/**"
-      - "tests/test_ranges/**"
-      - ".github/workflows/ranges-tests.yml"
+    branches:
+      - main
+      - dev
+    pull_request:
+      branches:
+        - main
+        - dev
 
 jobs:
   test-ranges:
