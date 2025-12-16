@@ -1,5 +1,7 @@
 import { apiGet } from "./api.js";
 import { state, labelOf } from "./state.js";
+import { renderKpis } from "./kpis.js";
+
 
 function outOfRangeFlag(value, low, high) {
   if (low != null && value < low) return "below";
@@ -50,6 +52,8 @@ async function fetchSeries(param) {
 export async function refreshChart() {
   const params = Array.from(state.enabledParams);
   const series = [];
+  const kpiData = [];
+
 
   for (const p of params) {
     let pts = await fetchSeries(p);
@@ -87,6 +91,44 @@ export async function refreshChart() {
         },
       };
     });
+
+    // Extraer puntos a formato uniforme: [date, value]
+const flat = pts.map(x => Array.isArray(x) ? x : x.value);
+
+// KPI: último y anterior
+const last = flat.length ? flat[flat.length - 1] : null;
+const prev = flat.length > 1 ? flat[flat.length - 2] : null;
+
+const lastValue = last ? last[1] : null;
+const prevValue = prev ? prev[1] : null;
+const delta = (lastValue != null && prevValue != null) ? (lastValue - prevValue) : null;
+
+// Alertas: nº de puntos fuera de rango
+const alerts = flat.reduce((acc, x) => {
+  const v = x[1];
+  return outOfRangeFlag(v, low, high) ? acc + 1 : acc;
+}, 0);
+
+// Estado del último valor
+let status = "sin datos";
+let statusKind = "neutral";
+if(lastValue != null){
+  const flag = outOfRangeFlag(lastValue, low, high);
+  if(!flag){ status = "en rango"; statusKind = "good"; }
+  else if(flag === "below"){ status = "bajo"; statusKind = "bad"; }
+  else { status = "alto"; statusKind = "bad"; }
+}
+
+kpiData.push({
+  name: labelOf(p),
+  unit: rr ? (rr.unit || "") : "",
+  lastValue,
+  delta,
+  status,
+  statusKind,
+  alerts,
+});
+
 
     series.push({
       name: labelOf(p),
@@ -133,21 +175,52 @@ export async function refreshChart() {
   }
 
   const option = {
-    animation: true,
-    tooltip: { trigger: "axis" },
-    legend: {
-      top: 10,
-      selected: legendSelected || undefined,
-    },
-    grid: { top: 60, left: 60, right: 20, bottom: 60 },
-    xAxis: { type: "time" },
-    yAxis: { type: "value", scale: true },
-    dataZoom: [
-      { type: "inside", xAxisIndex: 0 },
-      { type: "slider", xAxisIndex: 0 },
-    ],
-    series,
-  };
+  animation: true,
+  tooltip: {
+    trigger: "axis",
+    confine: true,
+    appendToBody: true,
+    formatter: (params) => {
+      if (!params || params.length === 0) return "";
 
+      const date =
+        params[0].axisValueLabel ||
+        params[0].axisValue ||
+        "";
+
+      const rows = params.map((it) => {
+        // Color REAL de la serie (no el del punto out-of-range)
+        const c = it.color || "#999";
+        const marker = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${c};margin-right:8px;"></span>`;
+
+        // Valor: puede venir como [date, value] o como {value:[date,value]}
+        let v = it.value;
+        if (Array.isArray(it.data)) v = it.data[1];
+        else if (it.data && it.data.value && Array.isArray(it.data.value)) v = it.data.value[1];
+
+        return `<div>${marker}${it.seriesName}: <b>${v ?? "—"}</b></div>`;
+      });
+
+      return `
+        <div style="font-weight:700;margin-bottom:6px;">${date}</div>
+        ${rows.join("")}
+      `;
+    },
+  },
+  legend: {
+    top: 10,
+    selected: legendSelected || undefined,
+  },
+  grid: { top: 60, left: 60, right: 20, bottom: 60 },
+  xAxis: { type: "time" },
+  yAxis: { type: "value", scale: true },
+  dataZoom: [
+    { type: "inside", xAxisIndex: 0 },
+    { type: "slider", xAxisIndex: 0 },
+  ],
+  series,
+};
+
+  renderKpis(kpiData);
   chart.setOption(option, true);
 }
