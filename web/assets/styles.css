@@ -67,3 +67,43 @@ button:hover{ background:#f9fafb; }
 .kpi.bad{ border-color:#fecaca; background:#fef2f2; }
 .kpi.good{ border-color:#bbf7d0; background:#f0fdf4; }
 
+
+.kpi{ position:relative; }
+.kpi .tip{
+  display:none;
+  position:absolute;
+  left:0;
+  top:100%;
+  margin-top:8px;
+  z-index:50;
+  width:320px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+  padding:10px 12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);
+  font-size:12px;
+}
+.kpi:hover .tip{ display:block; }
+.kpi .tip .h{ font-weight:800; margin-bottom:6px; }
+.kpi .tip .muted{ color:var(--muted); }
+.kpi .tip .alert{ margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
+.kpi .tip .pill{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:11px;
+  border:1px solid var(--border);
+  margin-left:6px;
+}
+.kpi .tip .pill.bad{ background:#fef2f2; border-color:#fecaca; }
+.kpi .tip .pill.good{ background:#f0fdf4; border-color:#bbf7d0; }
+
+.kpi .tip .tip-row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:6px;
+}
+.kpi .tip .tip-row:last-child{ margin-bottom:0; }
+
