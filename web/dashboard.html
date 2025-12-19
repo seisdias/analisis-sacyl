@@ -45,8 +45,26 @@
   </aside>
 
   <main class="main">
-    <div id="kpis" class="kpis"></div>
-    <div id="chart"></div>
+      <div id="kpis" class="kpis"></div>
+
+      <div class="zoombar panel">
+          <div class="zoomrow">
+              <div class="zoomfield">
+                  <div class="muted">Desde</div>
+                  <input id="zoomFrom" type="date"/></div>
+
+              <div class="zoomfield">
+                  <div class="muted">Hasta</div>
+                  <input id="zoomTo" type="date"/>
+              </div>
+
+              <button id="zoomApply">Aplicar</button>
+              <button id="zoomReset">Reset</button>
+          </div>
+          <div class="muted" id="zoomHint"></div>
+      </div>
+
+      <div id="chart"></div>
   </main>
 </div>
 

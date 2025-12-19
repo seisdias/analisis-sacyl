@@ -19,6 +19,9 @@ let lastZoomEnd = 100;
 let zoomStart = 0;
 let zoomEnd = 100;
 
+let globalExtent = { minTs: null, maxTs: null };
+
+
 
 
 export function initChart(dom) {
@@ -55,7 +58,70 @@ export function initChart(dom) {
 
 
   window.addEventListener("resize", () => chart && chart.resize());
+  // Hook UI zoom
+  wireZoomUI();
+
 }
+
+function wireZoomUI() {
+  const fromEl = document.getElementById("zoomFrom");
+  const toEl = document.getElementById("zoomTo");
+  const applyEl = document.getElementById("zoomApply");
+  const resetEl = document.getElementById("zoomReset");
+  const hintEl = document.getElementById("zoomHint");
+
+  if (!fromEl || !toEl || !applyEl || !resetEl) return;
+
+  function syncInputsFromZoom() {
+    const { minTs, maxTs } = globalExtent;
+    if (minTs == null || maxTs == null) return;
+
+    const a = pctToTs(zoomStart, minTs, maxTs);
+    const b = pctToTs(zoomEnd, minTs, maxTs);
+    if (a == null || b == null) return;
+
+    fromEl.value = toISODate(a);
+    toEl.value = toISODate(b);
+
+    if (hintEl) {
+      hintEl.textContent = `Mostrando: ${toISODate(a)} → ${toISODate(b)} (zoom ${zoomStart.toFixed(1)}%–${zoomEnd.toFixed(1)}%)`;
+    }
+  }
+
+  applyEl.addEventListener("click", () => {
+    const { minTs, maxTs } = globalExtent;
+    if (minTs == null || maxTs == null) return;
+
+    const a = parseISODate(fromEl.value);
+    const b = parseISODate(toEl.value);
+    if (a == null || b == null) return;
+
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
+
+    zoomStart = tsToPct(lo, minTs, maxTs);
+    zoomEnd = tsToPct(hi, minTs, maxTs);
+
+    chart.dispatchAction({ type: "dataZoom", start: zoomStart, end: zoomEnd });
+    syncInputsFromZoom();
+  });
+
+  resetEl.addEventListener("click", () => {
+    zoomStart = 0;
+    zoomEnd = 100;
+    chart.dispatchAction({ type: "dataZoom", start: zoomStart, end: zoomEnd });
+    syncInputsFromZoom();
+  });
+
+  // Cada vez que cambie el zoom por slider/rueda, actualizamos inputs
+  chart.on("dataZoom", () => {
+    setTimeout(syncInputsFromZoom, 0);
+  });
+
+  // Primer pintado: se sincroniza cuando refreshChart haya calculado globalExtent
+  setTimeout(syncInputsFromZoom, 250);
+}
+
 
 async function fetchSeries(param) {
   const data = await apiGet(
@@ -64,6 +130,45 @@ async function fetchSeries(param) {
   );
   return data.points.map((p) => [p.date, p.value]);
 }
+
+function toISODate(d) {
+  const x = new Date(d);
+  if (Number.isNaN(x.getTime())) return "";
+  const yyyy = x.getFullYear();
+  const mm = String(x.getMonth() + 1).padStart(2, "0");
+  const dd = String(x.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function parseISODate(s) {
+  // input type=date da YYYY-MM-DD
+  if (!s) return null;
+  const t = new Date(s + "T00:00:00").getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+// Devuelve {minTs, maxTs} del histórico usando una serie plana [date,value]
+function extentTs(flat) {
+  if (!flat || flat.length === 0) return { minTs: null, maxTs: null };
+  const minTs = new Date(flat[0][0]).getTime();
+  const maxTs = new Date(flat[flat.length - 1][0]).getTime();
+  if (Number.isNaN(minTs) || Number.isNaN(maxTs)) return { minTs: null, maxTs: null };
+  return { minTs, maxTs };
+}
+
+function pctToTs(pct, minTs, maxTs) {
+  if (minTs == null || maxTs == null) return null;
+  const t = minTs + (maxTs - minTs) * (pct / 100);
+  return t;
+}
+
+function tsToPct(ts, minTs, maxTs) {
+  if (ts == null || minTs == null || maxTs == null) return 0;
+  if (maxTs === minTs) return 0;
+  const p = ((ts - minTs) / (maxTs - minTs)) * 100;
+  return Math.max(0, Math.min(100, p));
+}
+
 
 function percentToDate(flat, pct){
   if(!flat || flat.length === 0) return null;
@@ -79,6 +184,8 @@ export async function refreshChart() {
   const series = [];
   const kpiData = [];
 
+  globalExtent = { minTs: null, maxTs: null };
+
   for (const p of params) {
     let pts = await fetchSeries(p);
 
@@ -89,6 +196,12 @@ export async function refreshChart() {
     // Guardamos una versión "plana" para minimap y KPIs
     // (la usaremos también como base para el tooltip/valores)
     const baseFlat = pts;
+
+    // Tomamos la primera serie con datos como referencia temporal global
+    if (globalExtent.minTs == null && baseFlat && baseFlat.length) {
+      globalExtent = extentTs(baseFlat);
+    }
+
 
     // Convertimos puntos fuera de rango en objetos con estilo
     pts = pts.map(([date, value]) => {
@@ -326,6 +439,12 @@ export async function refreshChart() {
 
   renderKpis(kpiData);
   chart.setOption(option, { notMerge: false, lazyUpdate: true });
+  // después de pintar, rellena los inputs con el zoom actual
+  const evt = new Event("dataZoom");
+  setTimeout(() => chart && chart.dispatchAction({ type: "dataZoom", start: zoomStart, end: zoomEnd }), 0);
+  
+  window.dispatchEvent(evt); // noop, solo por si quieres
+
 
   chart.off("dataZoom");
   chart.on("dataZoom", () => {

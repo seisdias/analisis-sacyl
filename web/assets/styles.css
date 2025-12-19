@@ -107,3 +107,10 @@ button:hover{ background:#f9fafb; }
 }
 .kpi .tip .tip-row:last-child{ margin-bottom:0; }
 
+.zoombar{ margin-bottom:10px; }
+.zoomrow{ display:flex; gap:10px; align-items:end; flex-wrap:wrap; }
+.zoomfield{ min-width:180px; }
+.zoomfield input{ width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:10px; }
+#zoomHint{ margin-top:8px; }
+
+
