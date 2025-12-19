@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gráficas (nuevo)</title>
+
+  <link rel="stylesheet" href="./assets/styles.css" />
+
+  <!-- ECharts (CDN). Si quieres offline luego lo pasamos a vendor/ -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <h1>Gráficas (nuevo)</h1>
+  <span id="status" class="pill">Conectando…</span>
+  <span class="pill">ECharts</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="panel">
+      <div class="row">
+        <div class="grow">
+          <div class="muted">Categoría</div>
+          <select id="groupSelect"></select>
+        </div>
+        <button id="btnAll">Mostrar todo</button>
+        <button id="btnNone">Ocultar todo</button>
+      </div>
+
+      <div class="row">
+        <div class="grow">
+          <div class="muted">Buscar parámetro</div>
+          <input id="search" type="search" placeholder="Ej: hemoglobina, creatinina..." />
+        </div>
+      </div>
+
+      <div id="paramList" class="list"></div>
+
+      <div class="muted footer-note">
+        Tip: Click en la leyenda para ocultar/mostrar líneas. Doble click para aislar una.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+      <div id="kpis" class="kpis"></div>
+
+      <div class="zoombar panel">
+          <div class="zoomrow">
+              <div class="zoomfield">
+                  <div class="muted">Desde</div>
+                  <input id="zoomFrom" type="date"/></div>
+
+              <div class="zoomfield">
+                  <div class="muted">Hasta</div>
+                  <input id="zoomTo" type="date"/>
+              </div>
+
+              <button id="zoomApply">Aplicar</button>
+              <button id="zoomReset">Reset</button>
+          </div>
+          <div class="muted" id="zoomHint"></div>
+      </div>
+
+      <div id="chart"></div>
+  </main>
+</div>
+
+<script type="module" src="./assets/app.js"></script>
+</body>
+</html>
