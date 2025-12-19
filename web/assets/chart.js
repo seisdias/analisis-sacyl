@@ -442,7 +442,7 @@ export async function refreshChart() {
   // después de pintar, rellena los inputs con el zoom actual
   const evt = new Event("dataZoom");
   setTimeout(() => chart && chart.dispatchAction({ type: "dataZoom", start: zoomStart, end: zoomEnd }), 0);
-  
+
   window.dispatchEvent(evt); // noop, solo por si quieres
 
 
