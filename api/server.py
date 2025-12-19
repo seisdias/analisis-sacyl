@@ -2,48 +2,153 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from typing import Dict, Any, List
-
-from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse
-
-from charts.defs import PARAM_DEFS, PARAM_GROUPS  # fuente de verdad :contentReference[oaicite:2]{index=2}
-from charts.series_provider import \
-    DbSeriesProvider  # acceso a series agnóstico de UI :contentReference[oaicite:3]{index=3}
-
-app = FastAPI(title="salud_v1 API", version="0.2")
-
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from api.session_store import SessionStore
+from charts.defs import PARAM_DEFS, PARAM_GROUPS
+from charts.series_provider import DbSeriesProvider
 from db import AnalysisDB
 from ranges import RangesManager
 
+app = FastAPI(title="salud_v1 API", version="0.2")
 
-
+# -------------------------
+# Static web (dashboard)
+# -------------------------
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web")
 
+# -------------------------
+# Sessions
+# -------------------------
+sessions = SessionStore()
 
 
+class OpenSessionRequest(BaseModel):
+    db_path: str
+
+
+class OpenSessionResponse(BaseModel):
+    session_id: str
+    db_path: str
+
+
+@app.post("/sessions/open", response_model=OpenSessionResponse)
+def sessions_open(req: OpenSessionRequest):
+    try:
+        info = sessions.open_existing(req.db_path)
+        return OpenSessionResponse(session_id=info.session_id, db_path=info.db_path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="DB no encontrada")
+
+
+@app.delete("/sessions/{session_id}")
+def sessions_close(session_id: str):
+    ok = sessions.close(session_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
+    return {"ok": True}
+
+
+class NewSessionRequest(BaseModel):
+    db_path: str
+    overwrite: bool = False  # lo dejamos listo para futuro, por ahora puedes ignorarlo
+
+
+@app.post("/sessions/new", response_model=OpenSessionResponse)
+def sessions_new(req: NewSessionRequest):
+    import os
+    from pathlib import Path
+
+    db_path = str(Path(req.db_path).resolve())
+
+    if os.path.exists(db_path) and not req.overwrite:
+        raise HTTPException(status_code=409, detail="El archivo ya existe")
+
+    # Si overwrite=true, borramos antes (como legacy)
+    if os.path.exists(db_path) and req.overwrite:
+        try:
+            os.remove(db_path)
+        except OSError as e:
+            raise HTTPException(status_code=500, detail=f"No se pudo borrar el archivo existente: {e}")
+
+    # Crear la BD (tu core se encarga de schema al open)
+    try:
+        db = AnalysisDB(db_path)
+        db.open()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"No se pudo crear la BD: {e}")
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+    # Abrir sesión sobre esa BD recién creada
+    info = sessions.open_existing(db_path)
+    return OpenSessionResponse(session_id=info.session_id, db_path=info.db_path)
+
+
+
+# -------------------------
+# Legacy compatibility (Tkinter launcher)
+# -------------------------
 def set_db_path(db_path: str) -> None:
+    """
+    Modo legacy: el launcher (Tkinter/WebChartsLauncher) fija un db_path global.
+    El API seguirá funcionando sin session_id si esto está configurado.
+    """
     app.state.db_path = db_path
 
-def _get_db() -> AnalysisDB:
+
+def _resolve_db_path(session_id: Optional[str]) -> str:
+    # 1) modo sesiones
+    if session_id:
+        info = sessions.get(session_id)
+        if not info:
+            raise HTTPException(status_code=404, detail="Sesión no encontrada")
+        return info.db_path
+
+    # 2) modo legacy (Tkinter launcher)
     db_path = getattr(app.state, "db_path", None)
     if not db_path:
-        raise RuntimeError("DB path no inicializado en el API (set_db_path no llamado)")
+        raise HTTPException(
+            status_code=400,
+            detail="DB no configurada (falta set_db_path o session_id)",
+        )
+    return str(db_path)
 
-    # Abrimos una conexión propia para este hilo (seguro con SQLite)
-    db = AnalysisDB(str(db_path))
+
+def _get_db_for_request(session_id: Optional[str]) -> AnalysisDB:
+    """
+    Abre una conexión SQLite nueva para cada request (patrón seguro en FastAPI).
+    """
+    db_path = _resolve_db_path(session_id)
+    db = AnalysisDB(db_path)
     db.open()
     return db
 
 
+# -------------------------
+# Basic endpoints
+# -------------------------
 @app.get("/")
 def root() -> Dict[str, Any]:
     return {
         "name": "salud_v1 API",
-        "endpoints": ["/health", "/meta", "/series?param=hemoglobina"],
+        "endpoints": [
+            "/health",
+            "/meta",
+            "/series?param=hemoglobina",
+            "/ranges",
+            "/sessions/open",
+        ],
     }
 
 
@@ -65,10 +170,41 @@ def meta() -> Dict[str, Any]:
     }
 
 
+@app.get("/patient")
+def patient(
+    session_id: str = Query(..., description="ID de sesión (multi-paciente)"),
+) -> Dict[str, Any]:
+    db = _get_db_for_request(session_id)
+    try:
+        # Usamos el core tal cual: db.paciente.get()
+        p = db.paciente.get()  # -> dict con columnas o None
+        if not p:
+            return {"display_name": None, "patient": None}
+
+        nombre = (p.get("nombre") or "").strip()
+        apellidos = (p.get("apellidos") or "").strip()
+        display_name = " ".join([x for x in [nombre, apellidos] if x]).strip() or None
+
+        return {
+            "display_name": display_name,
+            "patient": p,
+        }
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+
+
+# -------------------------
+# Data endpoints (now session-aware)
+# -------------------------
 @app.get("/series")
 def series(
     param: str = Query(..., description="Nombre de parámetro (key de PARAM_DEFS)"),
     limit: int = Query(1000, ge=1, le=10000, description="Máximo de puntos"),
+    session_id: Optional[str] = Query(default=None, description="ID de sesión (multi-paciente)"),
 ) -> JSONResponse:
     """
     Devuelve serie temporal ya parseada y ordenada.
@@ -79,7 +215,7 @@ def series(
     if param not in PARAM_DEFS:
         return JSONResponse({"error": f"param desconocido: {param}"}, status_code=400)
 
-    db = _get_db()
+    db = _get_db_for_request(session_id)
     try:
         provider = DbSeriesProvider(db, param_defs=PARAM_DEFS)
 
@@ -106,10 +242,14 @@ def series(
         }
     )
 
+
 @app.get("/ranges")
-def ranges() -> Dict[str, Any]:
+def ranges(
+    session_id: Optional[str] = Query(default=None, description="ID de sesión (multi-paciente)"),
+) -> Dict[str, Any]:
     """
     Devuelve rangos de referencia por parámetro (min/max, unidad, etc.).
+    No depende de la BD, pero dejamos session_id por simetría/contrato (y futuras reglas por sexo/edad).
     """
     rm = RangesManager()
     all_ranges = rm.get_all()
@@ -125,6 +265,3 @@ def ranges() -> Dict[str, Any]:
         }
 
     return {"ranges": out}
-
-
-

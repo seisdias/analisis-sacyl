@@ -4,6 +4,7 @@ export const state = {
   ranges: null,
   currentGroup: null,
   enabledParams: new Set(),
+  sessionId: null,
 };
 
 export function labelOf(param){

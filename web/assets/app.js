@@ -16,8 +16,19 @@ async function init(){
     state.base = getBaseUrl();
     if(!state.base) throw new Error("Falta parámetro ?base= en la URL");
 
+    const url = new URL(window.location.href);
+    state.sessionId = url.searchParams.get("session_id");
+
+    if(!state.sessionId){
+    console.warn("Dashboard sin session_id (modo legacy)");
+}
+
     state.meta = await apiGet(state.base, "/meta");
-    const rangesResp = await apiGet(state.base, "/ranges");
+    const rangesResp = await apiGet(
+        state.base,
+        state.sessionId ? `/ranges?session_id=${encodeURIComponent(state.sessionId)}` : "/ranges"
+    );
+
     state.ranges = rangesResp.ranges || {};
 
 
@@ -26,9 +37,9 @@ async function init(){
     initChart(chartDom);
     buildGroupSelect(groupSelect);
     setDefaultEnabled();
-    buildParamList(paramList, search);
+    buildParamList(paramList, search, { onToggle: refreshChart });
+    bindEvents({ groupSelect, search, btnAll, btnNone, paramList, onChange: refreshChart });
 
-    bindEvents({ groupSelect, search, btnAll, btnNone, paramList });
 
     await refreshChart();
   } catch(e){

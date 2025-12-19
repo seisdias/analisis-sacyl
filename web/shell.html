@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>salud_v1 (UI moderna)</title>
+
+  <!-- Reutilizamos tu look base -->
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <link rel="stylesheet" href="./assets/shell.css" />
+</head>
+<body>
+  <header class="topbar shell-topbar">
+    <div class="brand">
+      <b>salud_v1</b>
+      <span class="muted">UI moderna</span>
+    </div>
+
+    <div class="menu">
+      <button id="btnOpenDb">Abrir BD…</button>
+      <button id="btnCreateDb">Nueva BD…</button>
+      <button id="btnNewTab" title="Pestaña vacía (sin BD)" class="ghost">+ Tab</button>
+    </div>
+
+    <span id="shellStatus" class="pill">Listo</span>
+  </header>
+
+  <div class="shell">
+    <div class="tabs">
+      <div id="tabsBar" class="tabs-bar"></div>
+    </div>
+
+    <div id="tabsContent" class="tabs-content"></div>
+  </div>
+
+  <!-- Modal simple para pedir ruta -->
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card panel">
+      <div class="modal-title"><b id="modalTitle">Abrir base de datos</b></div>
+      <div class="muted" id="modalHint" style="margin-top:4px;">
+        Pega la ruta completa del fichero .db (por ahora). En fases posteriores lo cambiamos por selector nativo.
+      </div>
+
+      <div style="margin-top:10px;">
+        <input id="dbPathInput" type="text" placeholder="C:\ws\salud_v1\borja.db" />
+      </div>
+
+      <div class="row" style="margin-top:10px; justify-content:flex-end;">
+        <button id="btnCancel">Cancelar</button>
+        <button id="btnOpen">Abrir</button>
+      </div>
+    </div>
+    <div id="modalBackdrop" class="modal-backdrop"></div>
+  </div>
+
+  <script type="module" src="./assets/shell.js"></script>
+</body>
+</html>
