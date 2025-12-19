@@ -5,7 +5,6 @@ import time
 from typing import Optional
 
 import uvicorn
-import webview
 
 from api.server import app, set_db_path
 
@@ -41,8 +40,13 @@ class WebChartsLauncher:
         return f"http://127.0.0.1:{self.port}"
 
     def open_window(self, url: str) -> None:
-        webview.create_window("Gráficas (nuevo)", url, width=1200, height=800)
-        webview.start()
+        try:
+            import webview
+            webview.create_window("Gráficas (nuevo)", url, width=1200, height=800)
+            webview.start()
+        except ModuleNotFoundError:
+            import webbrowser
+            webbrowser.open(url)
 
     def stop_api(self) -> None:
         if self._server:
