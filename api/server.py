@@ -5,7 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query
+import os
+import uuid
+from datetime import datetime
+
+
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -29,6 +34,19 @@ app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web")
 # -------------------------
 sessions = SessionStore()
 
+def _data_dir() -> Path:
+    # Portable-friendly: si defines SALUD_V1_DATA_DIR, lo usamos.
+    # Si no, usamos carpeta de usuario (Windows/Mac).
+    base = os.getenv("SALUD_V1_DATA_DIR")
+    if base:
+        return Path(base).expanduser().resolve()
+    return (Path.home() / ".salud_v1").resolve()
+
+def _uploads_dir() -> Path:
+    d = _data_dir() / "uploads"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
 
 class OpenSessionRequest(BaseModel):
     db_path: str
@@ -37,6 +55,52 @@ class OpenSessionRequest(BaseModel):
 class OpenSessionResponse(BaseModel):
     session_id: str
     db_path: str
+
+@app.post("/sessions/upload", response_model=OpenSessionResponse)
+async def sessions_upload(db_file: UploadFile = File(...)):
+    """
+    Recibe una BD SQLite (multipart/form-data), la guarda en carpeta de trabajo,
+    y abre una sesión contra esa copia.
+    """
+    filename = db_file.filename or "paciente.db"
+    low = filename.lower()
+
+    if not (low.endswith(".db") or low.endswith(".sqlite") or low.endswith(".sqlite3")):
+        raise HTTPException(status_code=400, detail="Formato no soportado (esperado .db/.sqlite/.sqlite3)")
+
+    uploads = _uploads_dir()
+
+    # Nombre único para evitar colisiones
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_name = "".join(c for c in filename if c.isalnum() or c in ("-", "_", ".", " ")).strip()
+    if not safe_name:
+        safe_name = "paciente.db"
+
+    out_path = uploads / f"{stamp}_{uuid.uuid4().hex}_{safe_name}"
+
+    try:
+        # Guardamos en streaming
+        with out_path.open("wb") as f:
+            while True:
+                chunk = await db_file.read(1024 * 1024)  # 1MB
+                if not chunk:
+                    break
+                f.write(chunk)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"No se pudo guardar la BD subida: {e}")
+
+    # Abrimos sesión con la copia
+    try:
+        info = sessions.open_existing(str(out_path))
+        return OpenSessionResponse(session_id=info.session_id, db_path=info.db_path)
+    except Exception as e:
+        # Si la BD está corrupta o no es SQLite, lo normal es fallar aquí
+        try:
+            out_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise HTTPException(status_code=400, detail=f"No se pudo abrir la BD subida: {e}")
+
 
 
 @app.post("/sessions/open", response_model=OpenSessionResponse)

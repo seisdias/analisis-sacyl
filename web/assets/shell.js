@@ -57,6 +57,28 @@ const postJson = (path, body, opts) => requestJson("POST", path, body, opts);
 const getJson  = (path, opts) => requestJson("GET", path, undefined, opts);
 const delJson  = (path, opts) => requestJson("DELETE", path, undefined, opts);
 
+async function postFormData(path, formData, { signal } = {}) {
+  const res = await fetch(`${apiBase()}${path}`, {
+    method: "POST",
+    body: formData,
+    signal,
+  });
+
+  if (!res.ok) {
+    let detail = `${res.status} ${res.statusText}`;
+    try {
+      const j = await res.json();
+      detail = j.detail || j.error || JSON.stringify(j);
+    } catch {
+      // ignore
+    }
+    throw new Error(detail);
+  }
+
+  return await res.json();
+}
+
+
 // -----------------------------
 // Tabs state
 // -----------------------------
@@ -178,6 +200,8 @@ const modalHint = document.getElementById("modalHint");
 
 const btnOpenDb = document.getElementById("btnOpenDb");
 const btnCreateDb = document.getElementById("btnCreateDb");
+const btnUploadDb = document.getElementById("btnUploadDb");
+const fileUploadDb = document.getElementById("fileUploadDb");
 const btnNewTab = document.getElementById("btnNewTab");
 
 const btnCancel = document.getElementById("btnCancel");
@@ -210,6 +234,57 @@ function hideModal() {
 
 btnOpenDb.addEventListener("click", () => showModal("open"));
 btnCreateDb.addEventListener("click", () => showModal("new"));
+
+// --- Cargar BD (modo navegador, sin teclear ruta) ---
+btnUploadDb.addEventListener("click", () => {
+  // Abrimos el selector de archivo del navegador
+  fileUploadDb.value = "";
+  fileUploadDb.click();
+});
+
+fileUploadDb.addEventListener("change", async () => {
+  const file = fileUploadDb.files && fileUploadDb.files[0];
+  if (!file) return;
+
+  // Cancelar intentos previos si existieran
+  try { openAbort?.abort(); } catch {}
+  openAbort = new AbortController();
+
+  setPill(true, shellStatus, "Subiendo BD…");
+
+  try {
+    const fd = new FormData();
+    // OJO: el nombre "db_file" debe coincidir con el backend: db_file: UploadFile = File(...)
+    fd.append("db_file", file);
+
+    // 1) Subir BD y abrir sesión backend
+    const resp = await postFormData("/sessions/upload", fd, { signal: openAbort.signal });
+    const sid = resp.session_id;
+
+    // 2) Construir URL del dashboard (exige ?base=)
+    const base = apiBase();
+    const url = `${base}/web/dashboard.html?base=${encodeURIComponent(base)}&session_id=${encodeURIComponent(sid)}`;
+
+    // 3) Crear pestaña con título provisional (nombre del fichero subido)
+    const fallbackTitle = file.name || "Paciente";
+    addTab({ title: fallbackTitle, sessionId: sid, iframeUrl: url });
+
+    // 4) Mejorar título con el nombre del paciente (si existe)
+    try {
+      const patient = await getJson(`/patient?session_id=${encodeURIComponent(sid)}`, { signal: openAbort.signal });
+      const displayName = patient?.display_name ? String(patient.display_name).trim() : "";
+      if (displayName) updateTabTitleBySession(sid, displayName);
+    } catch (e) {
+      console.warn("No se pudo obtener el nombre del paciente:", e);
+    }
+
+    setPill(true, shellStatus, "Conectado");
+  } catch (e) {
+    if (e.name === "AbortError") return;
+    setPill(false, shellStatus, `Error: ${e.message}`);
+  }
+});
+
 
 btnCancel.addEventListener("click", hideModal);
 modalBackdrop.addEventListener("click", hideModal);
@@ -274,5 +349,7 @@ function boot() {
   addTab({ title: "Inicio" });
   setPill(true, shellStatus, "Listo");
 }
+
+if (window.pywebview && window.pywebview.api) btnUploadDb.style.display = "none";
 
 boot();
