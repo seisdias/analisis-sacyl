@@ -16,6 +16,10 @@ async function init(){
     state.base = getBaseUrl();
     if(!state.base) throw new Error("Falta parámetro ?base= en la URL");
 
+    const urlParams = new URLSearchParams(window.location.search);
+    state.sessionId = urlParams.get("session_id") || "";
+    if(!state.sessionId) throw new Error("Falta parámetro ?session_id= en la URL");
+
     const url = new URL(window.location.href);
     state.sessionId = url.searchParams.get("session_id");
 
@@ -39,6 +43,7 @@ async function init(){
     setDefaultEnabled();
     buildParamList(paramList, search, { onToggle: refreshChart });
     bindEvents({ groupSelect, search, btnAll, btnNone, paramList, onChange: refreshChart });
+    bindImportPdfs();
 
 
     await refreshChart();
@@ -49,3 +54,91 @@ async function init(){
 }
 
 init();
+
+function hasPywebview(){
+  return !!(window.pywebview && window.pywebview.api);
+}
+
+function bindImportPdfs(){
+  const btn = document.getElementById("btnImportPdfs");
+  const input = document.getElementById("fileImportPdfs");
+  const statusEl = document.getElementById("status");
+  if(!btn) return;
+
+  btn.addEventListener("click", async () => {
+    try{
+      // --- pywebview: rutas nativas ---
+      if(hasPywebview() && window.pywebview.api.pick_import_pdfs){
+        const paths = await window.pywebview.api.pick_import_pdfs();
+        if(!paths || paths.length === 0) return;
+
+        setStatus(true, statusEl, "Importando PDFs…");
+
+        const res = await fetch(`${state.base}/imports/from_paths`, {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ session_id: state.sessionId, paths }),
+        });
+        if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const j = await res.json();
+
+        await refreshChart();
+
+        if(j.errors && j.errors.length){
+          setStatus(false, statusEl, `Importado: ${j.imported}, Errores: ${j.errors.length}`);
+        } else {
+          setStatus(true, statusEl, `Importado: ${j.imported}`);
+        }
+        return;
+      }
+
+      // --- navegador: upload ---
+      if(input){
+        input.value = "";
+        input.click();
+      } else {
+        alert("Importación no disponible: falta input file");
+      }
+    } catch(e){
+      console.error(e);
+      setStatus(false, statusEl, `Error importando: ${e.message}`);
+    }
+  });
+
+  // Upload en navegador
+  if(input){
+    input.addEventListener("change", async () => {
+      const statusEl = document.getElementById("status");
+      try{
+        const files = Array.from(input.files || []);
+        if(files.length === 0) return;
+
+        setStatus(true, statusEl, "Subiendo PDFs…");
+
+        const fd = new FormData();
+        for(const f of files){
+          fd.append("pdf_files", f);
+        }
+
+        const res = await fetch(`${state.base}/imports/upload?session_id=${encodeURIComponent(state.sessionId)}`, {
+          method: "POST",
+          body: fd,
+        });
+        if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const j = await res.json();
+
+        await refreshChart();
+
+        if(j.errors && j.errors.length){
+          setStatus(false, statusEl, `Importado: ${j.imported}, Errores: ${j.errors.length}`);
+        } else {
+          setStatus(true, statusEl, `Importado: ${j.imported}`);
+        }
+      } catch(e){
+        console.error(e);
+        setStatus(false, statusEl, `Error importando: ${e.message}`);
+      }
+    });
+  }
+}
+

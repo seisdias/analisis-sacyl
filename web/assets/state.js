@@ -1,11 +1,12 @@
 export const state = {
   base: "",
+  sessionId: "",
   meta: null,
   ranges: null,
   currentGroup: null,
   enabledParams: new Set(),
-  sessionId: null,
 };
+
 
 export function labelOf(param){
   const meta = state.meta;

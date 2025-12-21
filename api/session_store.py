@@ -18,12 +18,7 @@ class SessionInfo:
 
 class SessionStore:
     """
-    Store en memoria (proceso FastAPI local) para mapear:
-      session_id -> db_path
-
-    Importante:
-    - No guarda conexiones SQLite, solo rutas.
-    - Es suficiente para multi-pestaña y evita problemas de thread.
+    session_id -> db_path (solo rutas, NUNCA conexiones)
     """
 
     def __init__(self) -> None:
@@ -42,10 +37,6 @@ class SessionStore:
         return info
 
     def register(self, db_path: str) -> SessionInfo:
-        """
-        Registra una sesión aunque el fichero aún no exista.
-        Útil para 'crear nueva BD' (la creará el core en otra fase).
-        """
         db_path = os.path.abspath(db_path)
         sid = uuid4().hex
         info = SessionInfo(session_id=sid, db_path=db_path, created_at=time.time())
