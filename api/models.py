@@ -17,6 +17,7 @@ class OpenSessionResponse(BaseModel):
 
 class NewSessionRequest(BaseModel):
     db_path: str
+    overwrite: bool = False
 
 
 class ImportPathsRequest(BaseModel):

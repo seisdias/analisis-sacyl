@@ -11,15 +11,23 @@ class JsBridge:
     Solo aquí se permite usar diálogos nativos.
     """
 
+    def _get_window(self):
+        # webview.windows existe cuando la ventana ya está creada
+        return webview.windows[0] if webview.windows else None
+
     def pick_open_db(self) -> Optional[str]:
         """Diálogo nativo: elegir BD existente."""
-        if not self._window:
+        w = self._get_window()
+        if not w:
             return None
-        import webview
-        paths = self._window.create_file_dialog(
+
+        paths = w.create_file_dialog(
             webview.OPEN_DIALOG,
             allow_multiple=False,
-            file_types=("SQLite DB (*.db;*.sqlite;*.sqlite3)", "*.db;*.sqlite;*.sqlite3"),
+            file_types=(
+                "SQLite DB (*.db;*.sqlite;*.sqlite3)",
+                "All files (*.*)",
+            ),
         )
         if not paths:
             return None
@@ -27,14 +35,18 @@ class JsBridge:
 
     def pick_new_db(self) -> Optional[str]:
         """Diálogo nativo: elegir ruta destino para crear BD nueva."""
-        if not self._window:
+        w = self._get_window()
+        if not w:
             return None
-        import webview
-        paths = self._window.create_file_dialog(
+
+        paths = w.create_file_dialog(
             webview.SAVE_DIALOG,
             allow_multiple=False,
             save_filename="paciente.db",
-            file_types=("SQLite DB (*.db)", "*.db"),
+            file_types=(
+                "SQLite DB (*.db;*.sqlite;*.sqlite3)",
+                "All files (*.*)",
+            ),
         )
         if not paths:
             return None

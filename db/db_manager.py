@@ -87,7 +87,7 @@ class AnalysisDB:
         self.gasometria = Gasometria(self.conn, self.analisis)
         self.orina = Orina(self.conn, self.analisis)
         self.config = Config(self.conn)
-        self.limiteParametro = LimiteParametro(self.conn)
+        self.limite_parametro = LimiteParametro(self.conn)
         self.tratamiento = Tratamiento(self.conn)
         self.ingreso = Ingreso(self.conn)
 

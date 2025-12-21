@@ -201,6 +201,33 @@ const modalHint = document.getElementById("modalHint");
 const btnOpenDb = document.getElementById("btnOpenDb");
 const btnCreateDb = document.getElementById("btnCreateDb");
 const btnUploadDb = document.getElementById("btnUploadDb");
+
+
+function updateDesktopUiVisibility(){
+  const isDesktop = !!(window.pywebview && window.pywebview.api);
+  // Ocultamos "Cargar BD…" en desktop (porque ya podemos abrir por path)
+  btnUploadDb.style.display = isDesktop ? "none" : "";
+  // Si quieres, también podrías ocultar el input file:
+  const fileUploadDb = document.getElementById("fileUploadDb");
+  if (fileUploadDb) fileUploadDb.style.display = isDesktop ? "none" : "none"; // sigue hidden
+}
+
+updateDesktopUiVisibility();
+
+// pywebview dispara este evento cuando está listo (según versión)
+window.addEventListener("pywebviewready", updateDesktopUiVisibility);
+
+// fallback: reintentos cortos por si no hay evento
+let tries = 0;
+const t = setInterval(() => {
+  updateDesktopUiVisibility();
+  tries++;
+  if ((window.pywebview && window.pywebview.api) || tries >= 20) clearInterval(t);
+}, 100);
+
+
+
+
 const fileUploadDb = document.getElementById("fileUploadDb");
 const btnNewTab = document.getElementById("btnNewTab");
 
@@ -232,8 +259,89 @@ function hideModal() {
   modal.setAttribute("aria-hidden", "true");
 }
 
-btnOpenDb.addEventListener("click", () => showModal("open"));
-btnCreateDb.addEventListener("click", () => showModal("new"));
+
+btnOpenDb.addEventListener("click", async () => {
+  // Desktop: diálogo nativo
+  if (hasPywebview() && window.pywebview.api.pick_open_db) {
+    try {
+      const path = await window.pywebview.api.pick_open_db();
+      if (!path) return;
+
+      try { openAbort?.abort(); } catch {}
+      openAbort = new AbortController();
+
+      setPill(true, shellStatus, "Abriendo BD…");
+
+      const resp = await postJson("/sessions/open", { db_path: path }, { signal: openAbort.signal });
+      const sid = resp.session_id;
+
+      const base = apiBase();
+      const url = `${base}/web/dashboard.html?base=${encodeURIComponent(base)}&session_id=${encodeURIComponent(sid)}`;
+
+      addTab({ title: fileNameFromPath(path), sessionId: sid, iframeUrl: url });
+
+      // Mejorar título con el nombre del paciente (si existe)
+      try {
+        const patient = await getJson(`/patient?session_id=${encodeURIComponent(sid)}`, { signal: openAbort.signal });
+        const displayName = patient?.display_name ? String(patient.display_name).trim() : "";
+        if (displayName) updateTabTitleBySession(sid, displayName);
+      } catch (e) {
+        console.warn("No se pudo obtener el nombre del paciente:", e);
+      }
+
+      setPill(true, shellStatus, "Conectado");
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      setPill(false, shellStatus, `Error: ${e.message}`);
+    }
+    return;
+  }
+
+  // Navegador fallback: modal
+  showModal("open");
+});
+
+btnCreateDb.addEventListener("click", async () => {
+  // Desktop: diálogo nativo (guardar como)
+  if (hasPywebview() && window.pywebview.api.pick_new_db) {
+    try {
+      const path = await window.pywebview.api.pick_new_db();
+      if (!path) return;
+
+      try { openAbort?.abort(); } catch {}
+      openAbort = new AbortController();
+
+      setPill(true, shellStatus, "Creando BD…");
+
+      const resp = await postJson("/sessions/new", { db_path: path, overwrite: true }, { signal: openAbort.signal });
+      const sid = resp.session_id;
+
+      const base = apiBase();
+      const url = `${base}/web/dashboard.html?base=${encodeURIComponent(base)}&session_id=${encodeURIComponent(sid)}`;
+
+      addTab({ title: fileNameFromPath(path), sessionId: sid, iframeUrl: url });
+
+      // Mejorar título con el nombre del paciente (si existe)
+      try {
+        const patient = await getJson(`/patient?session_id=${encodeURIComponent(sid)}`, { signal: openAbort.signal });
+        const displayName = patient?.display_name ? String(patient.display_name).trim() : "";
+        if (displayName) updateTabTitleBySession(sid, displayName);
+      } catch (e) {
+        console.warn("No se pudo obtener el nombre del paciente:", e);
+      }
+
+      setPill(true, shellStatus, "Conectado");
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      setPill(false, shellStatus, `Error: ${e.message}`);
+    }
+    return;
+  }
+
+  // Navegador fallback: modal
+  showModal("new");
+});
+
 
 // --- Cargar BD (modo navegador, sin teclear ruta) ---
 btnUploadDb.addEventListener("click", () => {
@@ -349,6 +457,11 @@ function boot() {
   addTab({ title: "Inicio" });
   setPill(true, shellStatus, "Listo");
 }
+
+function hasPywebview(){
+  return !!(window.pywebview && window.pywebview.api);
+}
+
 
 if (window.pywebview && window.pywebview.api) btnUploadDb.style.display = "none";
 

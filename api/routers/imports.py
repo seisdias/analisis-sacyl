@@ -44,7 +44,7 @@ def import_from_paths(
 
     for p in req.pdf_paths:
         try:
-            _import_pdf_into_db(db, p)
+            _import_pdf_into_db(p, db)
             ok += 1
         except Exception as e:
             errors.append(f"{Path(p).name}: {e}")
@@ -67,7 +67,7 @@ async def import_upload(
             content = await uf.read()
             dest.write_bytes(content)
 
-            _import_pdf_into_db(db, str(dest))
+            _import_pdf_into_db(str(dest), db)
             ok += 1
         except Exception as e:
             errors.append(f"{uf.filename}: {e}")

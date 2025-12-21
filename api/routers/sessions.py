@@ -36,7 +36,14 @@ def sessions_new(req: NewSessionRequest):
         raise HTTPException(status_code=400, detail="Extensión no válida (esperado .db/.sqlite/.sqlite3)")
 
     if p.exists():
-        raise HTTPException(status_code=409, detail="La BD ya existe (no se sobrescribe)")
+        if not getattr(req, "overwrite", False):
+            raise HTTPException(status_code=409, detail="La BD ya existe (no se sobrescribe)")
+
+        # overwrite=True -> borrar y recrear
+        try:
+            p.unlink()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"No se pudo sobrescribir (borrado falló): {e}")
 
     try:
         p.parent.mkdir(parents=True, exist_ok=True)

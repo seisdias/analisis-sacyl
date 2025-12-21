@@ -95,6 +95,109 @@ async function fetchSeries(param) {
   return (data.points || []).map((p) => [p.date, p.value]);
 }
 
+// -----------------------------
+// Timeline (ingresos + tratamientos)
+// -----------------------------
+let timelineCache = null; // { config, treatments, hospital_stays } | null
+
+async function fetchTimeline() {
+  // Reutilizamos apiGet (ya mete session_id automáticamente si state.sessionId existe)
+  const data = await apiGet(state.base, "/timeline");
+  timelineCache = data || null;
+  return timelineCache;
+}
+
+function safeParseTs(dateStr) {
+  // Esperamos "YYYY-MM-DD" desde backend
+  if (!dateStr) return null;
+  const t = new Date(dateStr + "T00:00:00").getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+function uniqByKey(items, keyFn) {
+  const seen = new Set();
+  const out = [];
+  for (const it of items) {
+    const k = keyFn(it);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(it);
+  }
+  return out;
+}
+
+function buildTimelineEvents(timeline, defaultTreatmentDays) {
+  const events = [];
+  if (!timeline) return events;
+
+  const stays = timeline.hospital_stays || [];
+  for (const s of stays) {
+    const a = safeParseTs(s.admission_date);
+    const d = safeParseTs(s.discharge_date);
+
+    if (a != null) {
+      events.push({
+        x: a,
+        kind: "hospital_admission",
+        label: "Ingreso",
+        detail: s.notes || "",
+      });
+    }
+    if (d != null) {
+      events.push({
+        x: d,
+        kind: "hospital_discharge",
+        label: "Alta",
+        detail: s.notes || "",
+      });
+    }
+  }
+
+  const treatments = timeline.treatments || [];
+  for (const t of treatments) {
+    const start = safeParseTs(t.start_date);
+    const end = safeParseTs(t.end_date);
+
+    if (start != null) {
+      events.push({
+        x: start,
+        kind: "treatment_start",
+        label: `Inicio tto${t.name ? `: ${t.name}` : ""}`,
+        detail: t.notes || "",
+      });
+    }
+
+    // Si no hay end_date, NO pintamos fin aún (lo haremos más adelante con fin teórico)
+    if (end != null) {
+      events.push({
+        x: end,
+        kind: "treatment_end",
+        label: `Fin tto${t.name ? `: ${t.name}` : ""}`,
+        detail: t.notes || "",
+      });
+    }
+  }
+
+  // Orden + dedupe por kind+ts+label (evita duplicados si backend repite)
+  const ordered = events
+    .filter((e) => e.x != null)
+    .sort((a, b) => a.x - b.x);
+
+  return uniqByKey(ordered, (e) => `${e.kind}|${e.x}|${e.label}`);
+}
+
+function buildTimelineMarkLineData(events) {
+  if (!events || events.length === 0) return [];
+
+  return events.map((e) => ({
+    name: e.label,
+    xAxis: e.x,                 // <-- ahora string "YYYY-MM-DD"
+    lineStyle: timelineStyle(e.kind),
+  }));
+}
+
+
+
 
 // -----------------------------
 // Init
@@ -210,11 +313,105 @@ function syncZoomInputsFromState() {
   }
 }
 
+
+function timelineStyle(kind) {
+  // No especifico colores globales (para no “imponer” estilo), pero sí diferenciamos patrón y grosor.
+  // Si luego quieres colores específicos, lo ajustamos en 2 minutos.
+  if (kind === "hospital_admission") return { type: "solid", width: 2, opacity: 0.85 };
+  if (kind === "hospital_discharge") return { type: "dashed", width: 2, opacity: 0.85 };
+  if (kind === "treatment_start") return { type: "solid", width: 1, opacity: 0.70 };
+  if (kind === "treatment_end") return { type: "dashed", width: 1, opacity: 0.70 };
+  return { type: "dotted", width: 1, opacity: 0.6 };
+}
+
+function buildGlobalTimelineMarkLine(events, globalExtent) {
+  if (!events || events.length === 0) return null;
+
+  const { minTs, maxTs } = globalExtent || {};
+  // Si tenemos extent, filtramos eventos fuera del rango para no “ensuciar” el zoom
+  const filtered = (minTs != null && maxTs != null)
+    ? events.filter((e) => e.ts >= minTs && e.ts <= maxTs)
+    : events;
+
+  if (filtered.length === 0) return null;
+
+  // ECharts markLine requiere data: [{ xAxis: <value>, name: <...>, lineStyle: {...} }, ...]
+  const data = filtered.map((e) => ({
+    name: e.label,
+    xAxis: e.ts,               // xAxis time → timestamp OK
+    lineStyle: timelineStyle(e.kind),
+    // Tooltip: usamos un formatter general, pero dejamos info en el nombre.
+  }));
+
+  return {
+    silent: true,
+    symbol: ["none", "none"],
+    // label se verá arriba; si molesta lo quitamos
+    label: {
+      show: true,
+      formatter: (p) => p.name || "",
+      rotate: 90,
+      position: "insideEndTop",
+    },
+    data,
+  };
+}
+
+function groupTimelineEventsByDay(events) {
+  const map = new Map(); // x -> { x, labels: [], kinds: Set }
+  for (const e of events) {
+    const key = e.x; // "YYYY-MM-DD"
+    if (!map.has(key)) map.set(key, { x: key, items: [] });
+    map.get(key).items.push(e);
+  }
+
+  const grouped = [];
+  for (const [x, g] of map.entries()) {
+    // Orden interno estable: ingresos antes que tratamientos (ajústalo si quieres)
+    const order = (k) => {
+      if (k === "hospital_admission") return 10;
+      if (k === "hospital_discharge") return 20;
+      if (k === "treatment_start") return 30;
+      if (k === "treatment_end") return 40;
+      return 99;
+    };
+
+    g.items.sort((a, b) => order(a.kind) - order(b.kind));
+
+    const label = g.items.map(it => it.label).join(" · ");
+    // Elegimos el “kind principal” para el estilo de la línea (prioridad configurable)
+    const kind = g.items[0]?.kind || "other";
+
+    grouped.push({
+      x,
+      kind,
+      label,
+      count: g.items.length,
+      items: g.items,
+    });
+  }
+
+  grouped.sort((a, b) => String(a.x).localeCompare(String(b.x)));
+  return grouped;
+}
+
+
+
 // -----------------------------
 // Render (main)
 // -----------------------------
 export async function refreshChart() {
   if (!chart) return;
+
+    // 1) Cargar timeline (no bloquea si falla; no queremos romper gráficas)
+  let timeline = null;
+  try {
+    timeline = await fetchTimeline();
+  } catch (e) {
+    console.warn("No se pudo cargar timeline:", e);
+    timeline = null;
+  }
+
 
   const params = Array.from(state.enabledParams || []);
   const series = [];
@@ -365,6 +562,38 @@ export async function refreshChart() {
     });
   }
 
+    // 2) Construir eventos timeline y markLine global
+  const defaultDays = (timeline && timeline.config) ? timeline.config.treatment_default_days : null;
+
+  const timelineEvents = buildTimelineEvents(timeline);
+  const grouped = groupTimelineEventsByDay(timelineEvents);
+  //const timelineMarkData = grouped.map((g) => ({
+  //  name: g.label,
+  //  xAxis: g.x,
+  //  lineStyle: timelineStyle(g.kind),
+  //}));
+
+  let flip = false;
+  const timelineMarkData = grouped.map((g) => {
+    flip = !flip;
+    return {
+      name: g.label,
+      xAxis: g.x,
+      lineStyle: timelineStyle(g.kind),
+      label: {
+        show: true,
+        rotate: 90,
+        position: flip ? "insideStartTop" : "insideEndTop",
+      },
+    };
+  });
+
+
+
+
+  const globalTimelineMarkLine = buildGlobalTimelineMarkLine(timelineEvents, globalExtent);
+
+
   // Legend selected: no incluir minis ni series desaparecidas
   let legendSelected = lastMultiLegendSelected;
   if (legendSelected) {
@@ -378,6 +607,34 @@ export async function refreshChart() {
   const legendNames = series
     .map((s) => s.name)
     .filter((n) => !n.endsWith("__mini"));
+
+  if (timelineMarkData.length) {
+    series.push({
+      name: "__timeline__",
+      type: "line",
+      xAxisIndex: 0,
+      yAxisIndex: 0,
+      data: [],                // no pinta línea como serie
+      showSymbol: false,
+      silent: true,
+      lineStyle: { opacity: 0 },
+      tooltip: { show: false },
+      // ✅ AQUÍ SÍ FUNCIONA
+      markLine: {
+        silent: true,
+        symbol: ["none", "none"],
+        label: {
+          show: true,
+          formatter: (p) => p.name || "",
+          rotate: 90,
+          position: "insideEndTop",
+        },
+        data: timelineMarkData,
+      },
+    });
+  } else {
+    console.warn("Timeline sin eventos para pintar.");
+  }
 
   const option = {
     animation: true,
@@ -449,6 +706,8 @@ export async function refreshChart() {
     ],
 
     series,
+    // MarkLine global (líneas verticales timeline)
+    markLine: globalTimelineMarkLine || undefined,
   };
 
   // KPIs
