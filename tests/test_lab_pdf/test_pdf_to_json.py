@@ -32,7 +32,7 @@ def _fake_metadata_header() -> str:
         "Apellidos: APELLIDO FICTICIO      Doctor: DR PRUEBA\n"
         "Fecha nacimiento: 23/06/1980   Sexo: M\n"
         "Nº Historia: HURH123456\n"
-        "Finalización: 13/11/25\n"
+        "Recepción: 13/11/25\n"
         "Origen: HEMATOLOGIA\n"
     )
 

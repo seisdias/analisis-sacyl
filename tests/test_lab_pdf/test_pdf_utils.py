@@ -6,7 +6,7 @@ def test_extract_text_from_pdf_returns_non_empty_string(hemato_pdf_path):
     assert isinstance(texto, str)
     assert len(texto) > 0
     # Alguna marca típica del informe
-    assert "Finalización:" in texto
+    assert "Recepción:" in texto
 
 def test_has_any_value_ignores_metadata_keys():
     data = {
