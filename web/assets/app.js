@@ -1,7 +1,8 @@
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
 import { initChart, refreshChart } from "./chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents } from "./ui.js";
+import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal } from "./ui.js";
+
 
 async function init(){
   const statusEl = document.getElementById("status");
@@ -44,6 +45,7 @@ async function init(){
     buildParamList(paramList, search, { onToggle: refreshChart });
     bindEvents({ groupSelect, search, btnAll, btnNone, paramList, onChange: refreshChart });
     bindImportPdfs();
+    bindTimelineCrud();
 
 
     await refreshChart();
@@ -74,10 +76,10 @@ function bindImportPdfs(){
 
         setStatus(true, statusEl, "Importando PDFs…");
 
-        const res = await fetch(`${state.base}/imports/from_paths`, {
+        const res = await fetch(`${state.base}/imports/from_paths?session_id=${encodeURIComponent(state.sessionId)}`, {
           method: "POST",
           headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ session_id: state.sessionId, paths }),
+          body: JSON.stringify({ pdf_paths: paths }),
         });
         if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
         const j = await res.json();
@@ -141,4 +143,45 @@ function bindImportPdfs(){
     });
   }
 }
+
+/*****
+Timelines
+*****/
+
+async function apiJson(method, path, body){
+  const opts = { method, headers: {} };
+  if(body !== undefined){
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(`${state.base}${path}`, opts);
+  if(!res.ok){
+    let txt = `${res.status} ${res.statusText}`;
+    try{
+      const j = await res.json();
+      txt = j.detail || j.error || JSON.stringify(j);
+    }catch{}
+    throw new Error(txt);
+  }
+  return await res.json();
+}
+
+function bindTimelineCrud(){
+  const btn = document.getElementById("btnTimeline");
+  if(!btn) return;
+
+  btn.addEventListener("click", async () => {
+    try{
+      const t = await apiJson("GET", `/timeline?session_id=${encodeURIComponent(state.sessionId)}`);
+      openTimelineModal(t, { onChanged: refreshChart });
+    }catch(e){
+      console.error(e);
+      const statusEl = document.getElementById("status");
+      setStatus(false, statusEl, `Error timeline: ${e.message}`);
+    }
+  });
+}
+
+
+
 
