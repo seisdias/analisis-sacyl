@@ -1,7 +1,7 @@
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
 import { initChart, refreshChart } from "./chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal } from "./ui.js";
+import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal, openRangesModal } from "./ui.js";
 
 
 async function init(){
@@ -46,6 +46,7 @@ async function init(){
     bindEvents({ groupSelect, search, btnAll, btnNone, paramList, onChange: refreshChart });
     bindImportPdfs();
     bindTimelineCrud();
+    bindRanges();
 
 
     await refreshChart();
@@ -178,6 +179,47 @@ function bindTimelineCrud(){
       console.error(e);
       const statusEl = document.getElementById("status");
       setStatus(false, statusEl, `Error timeline: ${e.message}`);
+    }
+  });
+}
+
+function bindRanges(){
+  const btn = document.getElementById("btnRanges");
+  if(!btn) return;
+
+  btn.addEventListener("click", async () => {
+    try{
+      // refrescamos ranges por si han cambiado
+      const r = await apiGet(
+        state.base,
+        state.sessionId ? `/ranges?session_id=${encodeURIComponent(state.sessionId)}` : "/ranges"
+      );
+      state.ranges = r.ranges || {};
+
+      openRangesModal({
+        ranges: state.ranges,
+        onReset: async () => {
+          await fetch(`${state.base}/ranges/reset`, { method: "POST" });
+          const rr = await apiGet(
+            state.base,
+            state.sessionId ? `/ranges?session_id=${encodeURIComponent(state.sessionId)}` : "/ranges"
+          );
+          state.ranges = rr.ranges || {};
+          await refreshChart();
+        },
+        onUpdate: async (key, min, max) => {
+          await fetch(`${state.base}/ranges/${encodeURIComponent(key)}`, {
+            method: "PUT",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ min, max }),
+          });
+          await refreshChart();
+        }
+      });
+    }catch(e){
+      console.error(e);
+      const statusEl = document.getElementById("status");
+      setStatus(false, statusEl, `Error rangos: ${e.message}`);
     }
   });
 }

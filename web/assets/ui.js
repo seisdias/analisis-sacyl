@@ -136,13 +136,13 @@ export function openTimelineModal(timeline, { onChanged } = {}){
     document.body.appendChild(modal);
 
     // listeners SOLO después de crear el modal
-    const show = () => {
-      modal.classList.remove("hidden");
-      modal.setAttribute("aria-hidden", "false");
+    //const show = () => {
+    //  modal.classList.remove("hidden");
+    //  modal.setAttribute("aria-hidden", "false");
 
-      // IMPORTANTÍSIMO: elimina cualquier inline que pueda impedir el cierre
-      modal.style.removeProperty("display");
-    };
+    //  // IMPORTANTÍSIMO: elimina cualquier inline que pueda impedir el cierre
+    //  modal.style.removeProperty("display");
+    //};
 
     const hide = () => {
       modal.classList.add("hidden");
@@ -179,19 +179,26 @@ export function openTimelineModal(timeline, { onChanged } = {}){
       if (ev.key === "Escape" && !modal.classList.contains("hidden")) {
         hide();
       }
-});
+    });
 
   }
 
 
+//  function show(){
+//    modal.classList.remove("hidden");
+//    modal.setAttribute("aria-hidden", "false");
+//    modal.style.position = "fixed";
+//    modal.style.inset = "0";
+//    modal.style.zIndex = "9999";
+//    modal.style.display = "block";
+//    modal.style.padding = "18px";
+//  }
+
   function show(){
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
-    modal.style.position = "fixed";
-    modal.style.inset = "0";
-    modal.style.zIndex = "9999";
-    modal.style.display = "block";
-    modal.style.padding = "18px";
+    // Muy importante: si hide puso display:none, lo quitamos
+    modal.style.removeProperty("display");
   }
 
 
@@ -278,8 +285,13 @@ export function openTimelineModal(timeline, { onChanged } = {}){
   }
 
   function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, (c) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+    const re = new RegExp('[&<>"\']', 'g');
+    return String(s).replace(re, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
     }[c]));
   }
 
@@ -376,6 +388,110 @@ export function openTimelineModal(timeline, { onChanged } = {}){
     });
   }
 }
+
+export function openRangesModal( ranges, { onChanged } = {}){
+  let modal = document.getElementById("rangesModal");
+
+  if(!modal){
+    modal = document.createElement("div");
+    modal.id = "rangesModal";
+    modal.className = "modal hidden";
+    modal.innerHTML = `
+      <div class="modal-backdrop" id="rgBackdrop"></div>
+      <div class="modal-card panel" style="max-width:900px; width:92vw; margin:40px auto 0 auto;">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <b>Rangos normales</b>
+          <button id="rgClose">Cerrar</button>
+        </div>
+
+        <div class="row" style="margin-top:10px; justify-content:flex-end;">
+          <button id="rgReset" class="ghost">Restaurar valores originales</button>
+        </div>
+
+        <div style="margin-top:10px; max-height:60vh; overflow:auto;">
+          <table class="table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>Parámetro</th>
+                <th>Mín</th>
+                <th>Máx</th>
+              </tr>
+            </thead>
+            <tbody id="rgBody"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const hide = () => {
+      modal.classList.add("hidden");
+      modal.style.display = "none";
+    };
+    const show = () => {
+      modal.classList.remove("hidden");
+      modal.style.display = "block";
+    };
+
+    modal.addEventListener("click", (ev) => {
+      if (ev.target.closest("#rgClose")) return hide();
+      if (ev.target.closest("#rgBackdrop")) return hide();
+      const card = modal.querySelector(".modal-card");
+      if (card && !card.contains(ev.target)) return hide();
+    });
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && !modal.classList.contains("hidden")) hide();
+    });
+
+    modal._show = show;
+    modal._hide = hide;
+  }
+
+  // Render tabla
+  const body = modal.querySelector("#rgBody");
+  body.innerHTML = "";
+
+  Object.entries(ranges || {}).forEach(([key, r]) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.label || key}</td>
+      <td><input type="number" step="any" value="${r.min ?? ""}" data-k="min"></td>
+      <td><input type="number" step="any" value="${r.max ?? ""}" data-k="max"></td>
+    `;
+    body.appendChild(tr);
+
+    tr.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("change", async () => {
+        const min = tr.querySelector('[data-k="min"]').value;
+        const max = tr.querySelector('[data-k="max"]').value;
+
+        await fetch(`${state.base}/ranges/${encodeURIComponent(key)}`, {
+          method: "PUT",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({
+            min: min === "" ? null : Number(min),
+            max: max === "" ? null : Number(max),
+          })
+        });
+
+        if (typeof onChanged === "function") await onChanged();
+      });
+    });
+  });
+
+  // Reset global
+  modal.querySelector("#rgReset").onclick = async () => {
+    await fetch(`${state.base}/ranges/reset`, { method: "POST" });
+    if (typeof onChanged === "function") await onChanged();
+    modal._hide();
+  };
+
+  modal._show();
+}
+
+
+
 
 
 

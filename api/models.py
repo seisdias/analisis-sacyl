@@ -65,3 +65,7 @@ class ParamLimitCreate(BaseModel):
 
 class ParamLimitUpdate(ParamLimitCreate):
     pass
+
+class RangeUpdate(BaseModel):
+    min: Optional[float] = None
+    max: Optional[float] = None

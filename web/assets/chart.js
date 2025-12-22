@@ -197,8 +197,6 @@ function buildTimelineMarkLineData(events) {
 }
 
 
-
-
 // -----------------------------
 // Init
 // -----------------------------
@@ -313,7 +311,6 @@ function syncZoomInputsFromState() {
   }
 }
 
-
 function timelineStyle(kind) {
   // No especifico colores globales (para no “imponer” estilo), pero sí diferenciamos patrón y grosor.
   // Si luego quieres colores específicos, lo ajustamos en 2 minutos.
@@ -395,7 +392,86 @@ function groupTimelineEventsByDay(events) {
   return grouped;
 }
 
+// -----------------------------
+// Timeline MarkArea (intervalos)
+// -----------------------------
+function buildTimelineMarkAreas(timeline) {
+  if (!timeline) return [];
 
+  const areas = [];
+
+  const stays = timeline.hospital_stays || [];
+  for (const s of stays) {
+    const a = safeParseTs(s.admission_date);
+    const d = safeParseTs(s.discharge_date);
+    if (a != null && d != null && d >= a) {
+      areas.push({
+        kind: "hospital",
+        from: a,
+        to: d,
+        label: "Ingreso hospitalario",
+      });
+    }
+  }
+
+  const defaultDays =
+    timeline.config?.treatment_default_days != null
+      ? timeline.config.treatment_default_days
+      : null;
+
+  const treatments = timeline.treatments || [];
+  for (const t of treatments) {
+    const start = safeParseTs(t.start_date);
+    if (start == null) continue;
+
+    let end = safeParseTs(t.end_date);
+    if (end == null) {
+      const days =
+        t.standard_days != null
+          ? t.standard_days
+          : defaultDays;
+      if (days != null) {
+        end = start + days * 24 * 60 * 60 * 1000;
+      }
+    }
+
+    if (end != null && end >= start) {
+      areas.push({
+        kind: "treatment",
+        from: start,
+        to: end,
+        label: t.name ? `Tratamiento: ${t.name}` : "Tratamiento",
+      });
+    }
+  }
+
+  return areas;
+}
+
+function buildTimelineMarkAreaOption(areas) {
+  if (!areas || areas.length === 0) return null;
+
+  const hospitalColor = "rgba(59,130,246,0.10)";   // azul/gris
+  const treatmentColor = "rgba(16,185,129,0.12)"; // verde
+
+  return {
+    silent: true,
+    data: areas.map((a) => ([
+      {
+        xAxis: a.from,
+        itemStyle: {
+          color: a.kind === "hospital" ? hospitalColor : treatmentColor,
+        },
+        label: {
+          show: false,
+        },
+      },
+      {
+        xAxis: a.to,
+      },
+    ])),
+  };
+}
 
 // -----------------------------
 // Render (main)
@@ -564,14 +640,12 @@ export async function refreshChart() {
 
     // 2) Construir eventos timeline y markLine global
   const defaultDays = (timeline && timeline.config) ? timeline.config.treatment_default_days : null;
-
   const timelineEvents = buildTimelineEvents(timeline);
   const grouped = groupTimelineEventsByDay(timelineEvents);
-  //const timelineMarkData = grouped.map((g) => ({
-  //  name: g.label,
-  //  xAxis: g.x,
-  //  lineStyle: timelineStyle(g.kind),
-  //}));
+  // 2.b) MarkArea de intervalos (ingresos + tratamientos)
+  const timelineAreas = buildTimelineMarkAreas(timeline);
+  const timelineMarkArea = buildTimelineMarkAreaOption(timelineAreas);
+
 
   let flip = false;
   const timelineMarkData = grouped.map((g) => {
@@ -631,6 +705,7 @@ export async function refreshChart() {
         },
         data: timelineMarkData,
       },
+      markArea: timelineMarkArea || undefined,
     });
   } else {
     console.warn("Timeline sin eventos para pintar.");
