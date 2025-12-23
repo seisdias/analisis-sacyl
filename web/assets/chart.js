@@ -55,6 +55,57 @@ function percentToDate(flat, pct) {
   return first + (last - first) * (pct / 100);
 }
 
+function buildTreatmentIntervals(timeline) {
+  const out = [];
+  if (!timeline) return out;
+
+  const defaultDays = timeline.config?.treatment_default_days ?? null;
+
+  for (const t of (timeline.treatments || [])) {
+    const start = safeParseTs(t.start_date);
+    if (start == null) continue;
+
+    let end = safeParseTs(t.end_date);
+    if (end == null) {
+      const days = (t.standard_days ?? defaultDays);
+      if (days != null) end = start + days * DAY;
+    }
+    if (end != null && end >= start) {
+      out.push({ name: t.name || "Tratamiento", start, end });
+    }
+  }
+  return out;
+}
+
+function treatmentsAt(ts, intervals) {
+  const res = [];
+  for (const iv of intervals) {
+    if (ts >= iv.start && ts <= iv.end) {
+      const day = Math.floor((ts - iv.start) / DAY) + 1;
+      res.push({ name: iv.name, day });
+    }
+  }
+  return res;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+function computeExtentWithHorizon(flats, padDays = 7, horizonDays = 60) {
+  const ts = [];
+  for (const flat of (flats || [])) {
+    for (const [d] of (flat || [])) {
+      const t = new Date(d).getTime();
+      if (!Number.isNaN(t)) ts.push(t);
+    }
+  }
+  if (!ts.length) return { minTs: null, maxTs: null };
+  const minTs = Math.min(...ts) - padDays * DAY;
+  const maxTs = Math.max(...ts) + horizonDays * DAY;
+  return { minTs, maxTs };
+}
+
+
+
 // -----------------------------
 // Module state
 // -----------------------------
@@ -327,7 +378,7 @@ function buildGlobalTimelineMarkLine(events, globalExtent) {
   const { minTs, maxTs } = globalExtent || {};
   // Si tenemos extent, filtramos eventos fuera del rango para no “ensuciar” el zoom
   const filtered = (minTs != null && maxTs != null)
-    ? events.filter((e) => e.ts >= minTs && e.ts <= maxTs)
+    ? events.filter((e) => e.x >= minTs && e.x <= maxTs)
     : events;
 
   if (filtered.length === 0) return null;
@@ -335,7 +386,7 @@ function buildGlobalTimelineMarkLine(events, globalExtent) {
   // ECharts markLine requiere data: [{ xAxis: <value>, name: <...>, lineStyle: {...} }, ...]
   const data = filtered.map((e) => ({
     name: e.label,
-    xAxis: e.ts,               // xAxis time → timestamp OK
+    xAxis: e.x,               // xAxis time → timestamp OK
     lineStyle: timelineStyle(e.kind),
     // Tooltip: usamos un formatter general, pero dejamos info en el nombre.
   }));
@@ -496,8 +547,11 @@ export async function refreshChart() {
   // Reset de extensión global (la fijamos con la primera serie con datos)
   globalExtent = { minTs: null, maxTs: null };
 
+  const allFlats = [];
+
   for (const p of params) {
     const baseFlat = await fetchSeries(p);
+    allFlats.push(baseFlat);
 
     // Si aún no tenemos extents globales, usamos la primera serie con datos
     if (globalExtent.minTs == null && baseFlat && baseFlat.length) {
@@ -509,7 +563,7 @@ export async function refreshChart() {
     const high = rr ? rr.max : null;
 
     // Serie principal con out-of-range estilado
-    const ptsStyled = baseFlat.map(([date, value]) => {
+    /*const ptsStyled = baseFlat.map(([date, value]) => {
       const flag = outOfRangeFlag(value, low, high);
       if (!flag) return [date, value];
 
@@ -522,7 +576,8 @@ export async function refreshChart() {
           borderWidth: 2,
         },
       };
-    });
+    });*/
+    const ptsStyled = baseFlat;
 
     // KPIs
     const last = baseFlat.length ? baseFlat[baseFlat.length - 1] : null;
@@ -640,11 +695,14 @@ export async function refreshChart() {
 
     // 2) Construir eventos timeline y markLine global
   const defaultDays = (timeline && timeline.config) ? timeline.config.treatment_default_days : null;
-  const timelineEvents = buildTimelineEvents(timeline);
+  const timelineEvents = buildTimelineEvents(timeline,defaultDays);
   const grouped = groupTimelineEventsByDay(timelineEvents);
   // 2.b) MarkArea de intervalos (ingresos + tratamientos)
   const timelineAreas = buildTimelineMarkAreas(timeline);
   const timelineMarkArea = buildTimelineMarkAreaOption(timelineAreas);
+  const treatmentIntervals = buildTreatmentIntervals(timeline);
+  globalExtent = computeExtentWithHorizon(allFlats, 7, 60);
+
 
 
   let flip = false;
@@ -693,7 +751,7 @@ export async function refreshChart() {
       silent: true,
       lineStyle: { opacity: 0 },
       tooltip: { show: false },
-      // ✅ AQUÍ SÍ FUNCIONA
+
       markLine: {
         silent: true,
         symbol: ["none", "none"],
@@ -726,8 +784,24 @@ export async function refreshChart() {
         );
         if (mainParams.length === 0) return "";
 
-        const date =
-          mainParams[0].axisValueLabel || mainParams[0].axisValue || "";
+        const axis = mainParams[0].axisValue;
+        const ts = (axis != null) ? Number(axis) : null;
+        const date = ts != null
+          ? new Date(ts).toLocaleDateString("es-ES")
+          : "";
+
+        let extra = "";
+        if (ts != null && Number.isFinite(ts)) {
+          const inside = treatmentsAt(ts, treatmentIntervals);
+          if (inside.length) {
+            extra = `
+              <div style="margin-top:6px;opacity:.9">
+                <hr style="margin:6px 0; opacity:.25"/>
+                ${inside.map(it => `💊 ${it.name}: día <b>+${it.day}</b>`).join("<br/>")}
+              </div>
+            `;
+          }
+        }
 
         const rows = mainParams.map((it) => {
           const c = it.color || "#999";
@@ -735,15 +809,14 @@ export async function refreshChart() {
 
           let v = it.value;
           if (Array.isArray(it.data)) v = it.data[1];
-          else if (it.data && it.data.value && Array.isArray(it.data.value))
-            v = it.data.value[1];
+          else if (it.data && it.data.value && Array.isArray(it.data.value)) v = it.data.value[1];
 
           return `<div>${marker}${it.seriesName}: <b>${v ?? "—"}</b></div>`;
         });
-
         return `
           <div style="font-weight:700;margin-bottom:6px;">${date}</div>
           ${rows.join("")}
+          ${extra}
         `;
       },
     },
@@ -760,7 +833,12 @@ export async function refreshChart() {
     ],
 
     xAxis: [
-      { type: "time", gridIndex: 0 },
+      {
+        type: "time",
+        gridIndex: 0,
+        min: globalExtent.minTs ?? "dataMin",
+        max: globalExtent.maxTs ?? "dataMax",
+      },
       { type: "time", gridIndex: 1, min: "dataMin", max: "dataMax" },
     ],
 

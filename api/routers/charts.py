@@ -60,13 +60,9 @@ def series(
     )
 
 
-@router.get("/ranges")
-def ranges() -> Dict[str, Any]:
-    with _RM_LOCK:
-        all_ranges = _RM.get_all()
-
+def _ranges_to_payload(rm: RangesManager) -> Dict[str, Any]:
     out: Dict[str, Any] = {}
-    for key, pr in all_ranges.items():
+    for key, pr in rm.get_all().items():
         out[key] = {
             "label": pr.label,
             "category": pr.category,
@@ -74,30 +70,32 @@ def ranges() -> Dict[str, Any]:
             "min": pr.min_value,
             "max": pr.max_value,
         }
-    return {"ranges": out}
+    return out
 
-@router.put("/ranges/{key}")
-def update_range(key: str, body: RangeUpdate) -> Dict[str, Any]:
+@router.get("/ranges")
+def ranges() -> Dict[str, Any]:
     with _RM_LOCK:
-        _RM.update_range(key, body.min, body.max)
-        pr = _RM.get_all()[key]
-    return {
-        "ok": True,
-        "range": {
-            "key": key,
-            "label": pr.label,
-            "category": pr.category,
-            "unit": pr.unit,
-            "min": pr.min_value,
-            "max": pr.max_value,
-        },
-    }
+        return {"ranges": _ranges_to_payload(_RM)}
 
 
-@router.post("/ranges/reset")
-def reset_ranges() -> Dict[str, Any]:
+@router.get("/ranges/defaults")
+def ranges_defaults() -> Dict[str, Any]:
+    # OJO: no tocar _RM; devolvemos defaults “fresh”
+    fresh = RangesManager()
+    return {"ranges": _ranges_to_payload(fresh)}
+
+
+class BulkRangeUpdate(BaseModel):
+    # { "leucocitos": {"min": 4.0, "max": 11.0}, ... }
+    ranges: Dict[str, Dict[str, Optional[float]]]
+
+
+@router.post("/ranges/bulk")
+def update_ranges_bulk(body: BulkRangeUpdate) -> Dict[str, Any]:
     with _RM_LOCK:
-        _RM.reset_defaults()
-    return {"ok": True}
+        for key, v in body.ranges.items():
+            # min/max pueden venir como null
+            _RM.update_range(key, v.get("min"), v.get("max"))
+        return {"ok": True, "ranges": _ranges_to_payload(_RM)}
 
 

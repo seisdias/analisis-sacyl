@@ -189,33 +189,30 @@ function bindRanges(){
 
   btn.addEventListener("click", async () => {
     try{
-      // refrescamos ranges por si han cambiado
-      const r = await apiGet(
-        state.base,
-        state.sessionId ? `/ranges?session_id=${encodeURIComponent(state.sessionId)}` : "/ranges"
-      );
-      state.ranges = r.ranges || {};
+      const currentResp = await apiGet(state.base, "/ranges");
+      const defaultsResp = await apiGet(state.base, "/ranges/defaults");
+
+      const current = currentResp.ranges || {};
+      const defaults = defaultsResp.ranges || {};
 
       openRangesModal({
-        ranges: state.ranges,
-        onReset: async () => {
-          await fetch(`${state.base}/ranges/reset`, { method: "POST" });
-          const rr = await apiGet(
-            state.base,
-            state.sessionId ? `/ranges?session_id=${encodeURIComponent(state.sessionId)}` : "/ranges"
-          );
-          state.ranges = rr.ranges || {};
-          await refreshChart();
-        },
-        onUpdate: async (key, min, max) => {
-          await fetch(`${state.base}/ranges/${encodeURIComponent(key)}`, {
-            method: "PUT",
+        current,
+        defaults,
+        onSave: async (rangesToSave) => {
+          // Bulk save
+          await fetch(`${state.base}/ranges/bulk`, {
+            method: "POST",
             headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ min, max }),
+            body: JSON.stringify({ ranges: rangesToSave }),
           });
+
+          // Refrescar chart al cerrar tras guardar
+          const refreshed = await apiGet(state.base, "/ranges");
+          state.ranges = refreshed.ranges || {};
           await refreshChart();
         }
       });
+
     }catch(e){
       console.error(e);
       const statusEl = document.getElementById("status");
@@ -223,6 +220,7 @@ function bindRanges(){
     }
   });
 }
+
 
 
 
