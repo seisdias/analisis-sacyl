@@ -104,6 +104,100 @@ function computeExtentWithHorizon(flats, padDays = 7, horizonDays = 60) {
   return { minTs, maxTs };
 }
 
+async function fetchParamLimits(baseUrl, paramKey){
+  const sid = state.sessionId || null;
+  const url = new URL(`${baseUrl}/param_limits`, window.location.origin);
+  url.searchParams.set("param_key", paramKey);
+  if (sid) url.searchParams.set("session_id", sid);
+
+  const r = await fetch(url.toString());
+  if(!r.ok) throw new Error(`limits http ${r.status}`);
+  const j = await r.json();
+  return j.limits || [];
+}
+
+function buildLimitsMarkLine(limits){
+  if(!limits || !limits.length) return null;
+
+  const data = limits
+    .filter(l => l && l.value != null)
+    .map(l => ({
+      name: l.label || "Límite",
+      yAxis: Number(l.value),
+      lineStyle: { color: "#111827" },
+    }));
+
+  return {
+    silent: true,
+    symbol: ["none", "none"],
+    lineStyle: { width: 2, type: "solid", opacity: 0.9 },
+    label: {
+      show: true,
+      position: "end",
+      formatter: (p) => p?.name ?? "",
+    },
+    /*data: staggerMarkLineLabels(data),*/
+    data: data,
+  };
+}
+
+
+function mergeMarkLines(a, b) {
+  if (!a && !b) return undefined;
+  const base = a || b;
+
+  const dataA = (a && a.data) ? a.data : [];
+  const dataB = (b && b.data) ? b.data : [];
+
+  const merged = [...dataA, ...dataB];
+
+  // Orden estable para que el escalonado sea determinista
+  const rank = (it) => {
+    const n = String(it?.name || "");
+    const low = n.toLowerCase();
+    if (low.includes("límite")) return 10;
+    if (n === "Max") return 20;
+    if (n === "Min") return 30;
+    return 99;
+  };
+  merged.sort((x, y) => rank(x) - rank(y));
+
+  // Escalonamos UNA sola vez, después de mezclar
+  const mergedStaggered = staggerMarkLineLabels(merged, 26);
+
+  return {
+    ...base,
+    data: mergedStaggered,
+  };
+}
+
+
+function staggerMarkLineLabels(data, stepPx = 26) {
+  // Con rotate:90, el solape se evita escalonando en X (dx)
+  let k = 0;
+  return (data || []).map((item) => {
+    const sign = (k % 2 === 0) ? -1 : +1;
+    const level = Math.floor(k / 2) + 1;
+    const dx = sign * level * stepPx;
+    k += 1;
+
+    return {
+      ...item,
+      label: {
+        ...(item.label || {}),
+        show: true,
+        rotate: 90,
+        position: "end",
+        offset: [dx, 0],
+      },
+    };
+  });
+}
+
+
+
+
+
 
 
 // -----------------------------
@@ -562,22 +656,37 @@ export async function refreshChart() {
     const low = rr ? rr.min : null;
     const high = rr ? rr.max : null;
 
-    // Serie principal con out-of-range estilado
-    /*const ptsStyled = baseFlat.map(([date, value]) => {
-      const flag = outOfRangeFlag(value, low, high);
-      if (!flag) return [date, value];
-
-      return {
-        value: [date, value],
-        symbolSize: 10,
-        itemStyle: {
-          color: "#ef4444",
-          borderColor: "#ffffff",
-          borderWidth: 2,
-        },
-      };
-    });*/
     const ptsStyled = baseFlat;
+
+    let limitsMarkLine = null;
+    try{
+      const limits = await fetchParamLimits(state.base, p);   // p = paramKey
+      limitsMarkLine = buildLimitsMarkLine(limits);
+    }catch(e){
+      console.warn("No se pudieron cargar límites para", p, e);
+      limitsMarkLine = null;
+    }
+
+    const rangesData = [
+      ...(low != null ? [{ yAxis: low, name: "Min" }] : []),
+      ...(high != null ? [{ yAxis: high, name: "Max" }] : []),
+    ];
+
+    const rangesMarkLine =
+    (low != null || high != null)
+      ? {
+          silent: true,
+          symbol: ["none", "none"],
+          lineStyle: { type: "dashed", opacity: 0.6 },
+          data: staggerMarkLineLabels(rangesData),
+
+        }
+      : undefined;
+
+    // limitsMarkLine ya lo calculas arriba con fetchParamLimits + buildLimitsMarkLine(...)
+    const combinedMarkLine = mergeMarkLines(rangesMarkLine, limitsMarkLine);
+
+
 
     // KPIs
     const last = baseFlat.length ? baseFlat[baseFlat.length - 1] : null;
@@ -636,6 +745,7 @@ export async function refreshChart() {
       lastAlerts,
     });
 
+
     // Serie principal
     series.push({
       name: labelOf(p),
@@ -648,7 +758,8 @@ export async function refreshChart() {
       lineStyle: { width: 3 },
       emphasis: { focus: "series" },
       data: ptsStyled,
-      markLine:
+      markLine : combinedMarkLine,
+      /*markLine:
         (low != null || high != null)
           ? {
               silent: true,
@@ -659,7 +770,7 @@ export async function refreshChart() {
                 ...(high != null ? [{ yAxis: high, name: "Max" }] : []),
               ],
             }
-          : undefined,
+          : undefined,*/
       markArea:
         (low != null && high != null)
           ? {
