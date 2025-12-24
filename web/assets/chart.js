@@ -8,6 +8,8 @@ import { outOfRangeFlag, toISODate, parseISODate, extentTs, pctToTs, tsToPct, pe
 import { fetchSeries, fetchParamLimits, fetchTimeline, getTimelineCache } from "./chart_api.js";
 import { timelineStyle, groupTimelineEventsByDay, buildTimelineEvents, buildTimelineMarkLineData,
   buildGlobalTimelineMarkLine, buildTimelineMarkAreas, buildTimelineMarkAreaOption } from "./timeline_builders.js";
+import { detectCrossingsFlat, attachTreatmentDay } from "./clinical_crossings.js";
+
 
 let chart = null;
 let zoomStart = 0;
@@ -144,7 +146,7 @@ export async function refreshChart() {
     timeline = null;
   }
 
-
+  const treatmentIntervals = buildTreatmentIntervals(timeline);
   const params = Array.from(state.enabledParams || []);
   const series = [];
   const kpiData = [];
@@ -154,9 +156,12 @@ export async function refreshChart() {
 
   const allFlats = [];
 
+
   for (const p of params) {
     const baseFlat = await fetchSeries(p);
     allFlats.push(baseFlat);
+    let crossingsForParam = [];
+    let limitValueForParam = null;
 
     // Si aún no tenemos extents globales, usamos la primera serie con datos
     if (globalExtent.minTs == null && baseFlat && baseFlat.length) {
@@ -172,6 +177,20 @@ export async function refreshChart() {
     let limitsMarkLine = null;
     try{
       const limits = await fetchParamLimits(state.base, p);   // p = paramKey
+
+      // --- Cruces clínicos (FASE 4.3.1): SOLO cálculo (sin pintar aún)
+      const firstLimit = (limits || []).find(l => l && l.value != null);
+      if (firstLimit) {
+        limitValueForParam = Number(firstLimit.value);
+        const crossings = detectCrossingsFlat(baseFlat, limitValueForParam);
+        crossingsForParam = attachTreatmentDay(crossings, treatmentIntervals);
+
+        if (crossingsForParam.length) {
+          console.log("[crossings]", p, firstLimit.label || "Límite", limitValueForParam, crossingsForParam);
+        }
+
+      }
+
       limitsMarkLine = buildLimitsMarkLine(limits);
     }catch(e){
       console.warn("No se pudieron cargar límites para", p, e);
@@ -270,18 +289,6 @@ export async function refreshChart() {
       emphasis: { focus: "series" },
       data: ptsStyled,
       markLine : combinedMarkLine,
-      /*markLine:
-        (low != null || high != null)
-          ? {
-              silent: true,
-              symbol: ["none", "none"],
-              lineStyle: { type: "dashed", opacity: 0.6 },
-              data: [
-                ...(low != null ? [{ yAxis: low, name: "Min" }] : []),
-                ...(high != null ? [{ yAxis: high, name: "Max" }] : []),
-              ],
-            }
-          : undefined,*/
       markArea:
         (low != null && high != null)
           ? {
@@ -291,6 +298,36 @@ export async function refreshChart() {
             }
           : undefined,
     });
+
+    // --- Serie de cruces (puntos ficticios)
+    if (crossingsForParam.length && limitValueForParam != null) {
+      const crossingPoints = crossingsForParam.map(c => ([
+        c.dateISO,
+        limitValueForParam,
+        {
+          kind: "crossing",
+          paramKey: p,
+          direction: c.direction,   // "up" | "down"
+          limitValue: limitValueForParam,
+          treatments: c.treatments || [],
+        }
+      ]));
+
+      series.push({
+        name: `${labelOf(p)} — cruce`,
+        type: "scatter",
+        xAxisIndex: 0,
+        yAxisIndex: 0,
+        symbolSize: 10,
+        data: crossingPoints,
+        z: 10,
+        tooltip: { show: true },
+        // Para que no moleste en la leyenda:
+        legendHoverLink: false,
+        // Si no quieres que aparezca en la leyenda, lo hacemos luego con legend.selected
+      });
+    }
+
 
     // Serie minimap (ligera, sin rojos)
     series.push({
@@ -322,7 +359,6 @@ export async function refreshChart() {
   // 2.b) MarkArea de intervalos (ingresos + tratamientos)
   const timelineAreas = buildTimelineMarkAreas(timeline);
   const timelineMarkArea = buildTimelineMarkAreaOption(timelineAreas);
-  const treatmentIntervals = buildTreatmentIntervals(timeline);
   globalExtent = computeExtentWithHorizon(allFlats, 7, 60);
 
 
@@ -400,6 +436,41 @@ export async function refreshChart() {
       appendToBody: true,
       formatter: (params) => {
         if (!params || params.length === 0) return "";
+
+        // --- Caso especial: punto ficticio de cruce (scatter)
+        const crossing = params.find((it) => {
+          const v = it && it.value;
+          return Array.isArray(v) && v.length >= 3 && v[2] && v[2].kind === "crossing";
+        });
+
+        if (crossing) {
+          const v = crossing.value; // [dateISO, limitValue, meta]
+          const dateISO = v[0];
+          const limitVal = v[1];
+          const meta = v[2];
+
+          const dirTxt = meta.direction === "up" ? "↑ Cruce al alza" : "↓ Cruce a la baja";
+
+          // Si hay tratamientos, muestra el primero (o todos)
+          let txHtml = "";
+          const txs = Array.isArray(meta.treatments) ? meta.treatments : [];
+          if (txs.length) {
+            txHtml = `
+              <div style="margin-top:6px;opacity:.9">
+                <hr style="margin:6px 0; opacity:.25"/>
+                ${txs.map(it => `💊 ${it.name}: día <b>+${it.day}</b>`).join("<br/>")}
+              </div>
+            `;
+          }
+
+          return `
+            <div style="font-weight:700;margin-bottom:6px;">${dateISO}</div>
+            <div><b>${labelOf(meta.paramKey)}</b></div>
+            <div style="margin-top:4px;">${dirTxt} @ <b>${limitVal}</b></div>
+            ${txHtml}
+          `;
+        }
+
 
         const mainParams = params.filter(
           (it) => !String(it.seriesName || "").endsWith("__mini")
