@@ -47,16 +47,24 @@ export function detectCrossingsFlat(flat, limitValue) {
     if (!direction) continue;
 
     // Interpolación lineal en el segmento (tiempo) para encontrar cuándo v(t)=limit
-    const denom = (v1 - v0);
-    if (denom === 0) continue;
+    // Cruce "clínico por muestra": el día del primer valor que supera/cae por debajo del límite
+    // - up  : usamos el punto i (d1) donde v1 > limit
+    // - down: usamos el punto i (d1) donde v1 < limit
+    const ts = t1;        // anclamos al día de la muestra posterior
+    const dateISO = d1;   // usamos la fecha exacta de la muestra posterior
 
-    const alpha = (limitValue - v0) / denom; // 0..1 idealmente
-    if (!(alpha >= 0 && alpha <= 1)) continue;
+    out.push({
+      direction,
+      ts,
+      dateISO,
+      i0: i - 1,
+      i1: i,
+      d0,
+      d1,
+      v0,
+      v1,
+    });
 
-    const ts = Math.round(lerp(t0, t1, alpha));
-    const dateISO = new Date(ts).toISOString().slice(0, 10);
-
-    out.push({ direction, ts, dateISO, i0: i - 1, i1: i, v0, v1 });
   }
 
   return out;

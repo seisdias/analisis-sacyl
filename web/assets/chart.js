@@ -438,6 +438,7 @@ export async function refreshChart() {
         if (!params || params.length === 0) return "";
 
         // --- Caso especial: punto ficticio de cruce (scatter)
+        let crossingHtml = "";
         const crossing = params.find((it) => {
           const v = it && it.value;
           return Array.isArray(v) && v.length >= 3 && v[2] && v[2].kind === "crossing";
@@ -458,12 +459,12 @@ export async function refreshChart() {
             txHtml = `
               <div style="margin-top:6px;opacity:.9">
                 <hr style="margin:6px 0; opacity:.25"/>
-                ${txs.map(it => `💊 ${it.name}: día <b>+${it.day}</b>`).join("<br/>")}
+                ${txs.map(it => `💊 ${it.name}`).join("<br/>")}
               </div>
             `;
           }
 
-          return `
+          crossingHtml =  `
             <div style="font-weight:700;margin-bottom:6px;">${dateISO}</div>
             <div><b>${labelOf(meta.paramKey)}</b></div>
             <div style="margin-top:4px;">${dirTxt} @ <b>${limitVal}</b></div>
@@ -472,9 +473,13 @@ export async function refreshChart() {
         }
 
 
-        const mainParams = params.filter(
-          (it) => !String(it.seriesName || "").endsWith("__mini")
-        );
+        const mainParams = params.filter((it) => {
+          const n = String(it.seriesName || "");
+          if (n.endsWith("__mini")) return false;
+          // excluir scatter de cruces del bloque "normal"
+          if (n.includes("— cruce")) return false;
+          return true;
+        });
         if (mainParams.length === 0) return "";
 
         const axis = mainParams[0].axisValue;
@@ -510,7 +515,8 @@ export async function refreshChart() {
           <div style="font-weight:700;margin-bottom:6px;">${date}</div>
           ${rows.join("")}
           ${extra}
-        `;
+          ${crossingHtml}
+        `
       },
     },
 
