@@ -1,7 +1,7 @@
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
 import { initChart, refreshChart } from "./chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal, openRangesModal } from "./ui.js";
+import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal, openRangesModal, openLimitsModal } from "./ui.js";
 
 
 async function init(){
@@ -47,6 +47,8 @@ async function init(){
     bindImportPdfs();
     bindTimelineCrud();
     bindRanges();
+    bindLimits();
+
 
 
     await refreshChart();
@@ -219,6 +221,19 @@ function bindRanges(){
       setStatus(false, statusEl, `Error rangos: ${e.message}`);
     }
   });
+}
+
+function bindLimits(){
+  const btnLimits = document.getElementById("btnLimits");
+  if(!btnLimits){
+    return
+  }
+
+  btnLimits?.addEventListener("click", async () => {
+    await openLimitsModal();
+    await refreshChart();
+  });
+
 }
 
 
