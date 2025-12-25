@@ -3,7 +3,7 @@
 
 from typing import Any
 
-SCHEMA_VERSION: int = 2
+SCHEMA_VERSION: int = 3
 
 SCHEMA_SQL: str = """
 -- ================== ANALISIS (DOCUMENTO) ===================
@@ -119,6 +119,43 @@ CREATE TABLE IF NOT EXISTS orina (
     categoria_albuminuria TEXT,
     FOREIGN KEY (analisis_id) REFERENCES analisis(id) ON DELETE CASCADE
 );
+
+-- ================== CONFIG ===================
+CREATE TABLE IF NOT EXISTS app_config (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
+
+-- ================== TRATAMIENTO (CURSO) ===================
+CREATE TABLE IF NOT EXISTS treatment_course (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    start_date TEXT,
+    end_date TEXT,
+    standard_days INTEGER,
+    notes TEXT
+);
+
+-- ================== INGRESO HOSPITALARIO ===================
+CREATE TABLE IF NOT EXISTS hospital_stay (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admission_date TEXT,
+    discharge_date TEXT,
+    notes TEXT
+);
+
+-- ================== LIMITES POR PARAMETRO ===================
+CREATE TABLE IF NOT EXISTS param_limit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    param_key TEXT NOT NULL,
+    value REAL NOT NULL,
+    label TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_param_limit_key ON param_limit(param_key);
+
+
 """
 
 

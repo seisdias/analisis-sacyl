@@ -114,3 +114,31 @@ button:hover{ background:#f9fafb; }
 #zoomHint{ margin-top:8px; }
 
 
+/*Modal*/
+/* ===== Modal overlay ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.45); /* 👈 fondo oscuro */
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-card {
+  background: var(--bg-panel, #fff);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+
+
+
