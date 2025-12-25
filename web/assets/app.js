@@ -35,6 +35,9 @@ async function init(){
     );
 
     state.ranges = rangesResp.ranges || {};
+    // --- Sustitución total del selector: grupos por categorías clínicas (como Rangos)
+    state.meta.groups = buildGroupsFromRanges(state.meta, state.ranges);
+
 
 
     setStatus(true, statusEl, "Conectado");
@@ -63,6 +66,61 @@ init();
 function hasPywebview(){
   return !!(window.pywebview && window.pywebview.api);
 }
+
+function buildGroupsFromRanges(meta, ranges) {
+  const defs = meta?.defs || {};
+  const originalGroups = meta?.groups || [];
+
+  // category -> Set(params)
+  const byCat = new Map();
+
+  for (const [param, r] of Object.entries(ranges || {})) {
+    const cat = (r && r.category) ? String(r.category).trim() : "";
+    if (!cat) continue;
+    if (!defs[param]) continue; // solo params que existan en meta.defs
+    if (!byCat.has(cat)) byCat.set(cat, new Set());
+    byCat.get(cat).add(param);
+  }
+
+  // Si por lo que sea no tenemos categorías, caemos al comportamiento legacy
+  if (byCat.size === 0) return originalGroups;
+
+  const groups = Array.from(byCat.entries()).map(([name, set]) => {
+    const params = Array.from(set);
+
+    // Orden estable: por label si existe, si no por key
+    params.sort((a, b) => {
+      const la = (defs[a]?.label || a).toLowerCase();
+      const lb = (defs[b]?.label || b).toLowerCase();
+      return la.localeCompare(lb);
+    });
+
+    return { name, params };
+  });
+
+  // Orden de grupos: Hematología primero, y dentro blanca/roja/plaquetas al inicio
+  const prio = (name) => {
+    const n = String(name);
+    if (n === "Hematología — Serie blanca") return 10;
+    if (n === "Hematología — Serie roja") return 20;
+    if (n === "Hematología — Plaquetas") return 30;
+    if (n.startsWith("Hematología —")) return 40;
+    if (n.startsWith("Bioquímica —")) return 50;
+    if (n.startsWith("Orina —")) return 60;
+    if (n.startsWith("Gasometría —")) return 70;
+    return 99;
+  };
+
+  groups.sort((a, b) => {
+    const pa = prio(a.name);
+    const pb = prio(b.name);
+    if (pa !== pb) return pa - pb;
+    return String(a.name).localeCompare(String(b.name), "es");
+  });
+
+  return groups;
+}
+
 
 function bindImportPdfs(){
   const btn = document.getElementById("btnImportPdfs");
