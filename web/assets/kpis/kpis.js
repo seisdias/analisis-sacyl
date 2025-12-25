@@ -1,11 +1,6 @@
-function fmt(n) {
-  if (n == null) return "—";
-  const v = Number(n);
-  if (Number.isNaN(v)) return "—";
-  if (Math.abs(v) >= 100) return v.toFixed(0);
-  if (Math.abs(v) >= 10) return v.toFixed(1);
-  return v.toFixed(2);
-}
+// web/assets/kpis/kpis.js
+
+import { fmt } from "./../core/format.js"
 
 export function renderKpis(items) {
   const el = document.getElementById("kpis");

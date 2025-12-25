@@ -1,4 +1,7 @@
-// web/assets/chart_utils.js
+// web/assets/charts/chart_utils.js
+
+import { safeParseTs, uniqByKey } from "../timeline/timeline_utils.js";
+
 
 // -----------------------------
 // Helpers
@@ -177,24 +180,7 @@ export function mergeMarkLines(a, b) {
   };
 }
 
-export function safeParseTs(dateStr) {
-  // Esperamos "YYYY-MM-DD" desde backend
-  if (!dateStr) return null;
-  const t = new Date(dateStr + "T00:00:00").getTime();
-  return Number.isNaN(t) ? null : t;
-}
 
-export function uniqByKey(items, keyFn) {
-  const seen = new Set();
-  const out = [];
-  for (const it of items) {
-    const k = keyFn(it);
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(it);
-  }
-  return out;
-}
 
 export function renderTreatmentKpis(treatmentIntervals, crossingsByParam, limitByParam, labelOfFn = null) {
   const host = document.getElementById("kpis");

@@ -1,6 +1,8 @@
+// web/assets/app.js
+
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
-import { initChart, refreshChart } from "./chart.js";
+import { initChart, refreshChart } from "./charts/chart.js";
 import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal, openRangesModal, openLimitsModal } from "./ui.js";
 
 

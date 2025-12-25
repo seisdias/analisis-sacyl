@@ -1,14 +1,14 @@
-// web/assets/chart.js
+// web/assets/charts/chart.js
 
-import { state, labelOf } from "./state.js";
-import { renderKpis } from "./kpis.js";
+import { state, labelOf } from "../state.js";
 import { outOfRangeFlag, toISODate, parseISODate, extentTs, pctToTs, tsToPct, percentToDate, buildTreatmentIntervals,
  staggerMarkLineLabels, treatmentsAt, computeExtentWithHorizon, buildLimitsMarkLine, mergeMarkLines,
- safeParseTs, renderTreatmentKpis } from "./chart_utils.js";
+ renderTreatmentKpis } from "./chart_utils.js";
 import { fetchSeries, fetchParamLimits, fetchTimeline, getTimelineCache } from "./chart_api.js";
 import { timelineStyle, groupTimelineEventsByDay, buildTimelineEvents, buildTimelineMarkLineData,
-  buildGlobalTimelineMarkLine, buildTimelineMarkAreas, buildTimelineMarkAreaOption } from "./timeline_builders.js";
-import { detectCrossingsFlat, attachTreatmentDay } from "./clinical/clinical_crossings.js";
+  buildGlobalTimelineMarkLine, buildTimelineMarkAreas, buildTimelineMarkAreaOption } from "../timeline/timeline_builders.js";
+import { detectCrossingsFlat, attachTreatmentDay } from "../clinical/clinical_crossings.js";
+import { renderKpis } from "../kpis/kpis.js";
 
 
 let chart = null;
