@@ -3,104 +3,109 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 
+
 def write_lines(c, x, y, lines, leading=14):
     for line in lines:
+        # Si la línea es un encabezado de sección, la ponemos en negrita (opcional)
         c.drawString(x, y, line)
         y -= leading
     return y
 
+
 def main():
+    # Directorio de salida según tu estructura de tests
     out_dir = Path("tests/data")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_pdf = out_dir / "sample_lab_report_2025_06_24.pdf"
+
+    # Nombre del archivo que esperan tus tests
+    out_pdf = out_dir / "hemocultivos_20251113.pdf"
 
     c = canvas.Canvas(str(out_pdf), pagesize=A4)
     width, height = A4
 
     y = height - 60
-    c.setFont("Helvetica", 11)
+    c.setFont("Helvetica", 10)
 
-    # --- Cabecera ANONIMIZADA (pero con fecha/petición/origen para que el parser funcione) ---
+    # --- CABECERA (Actualizada con Recepción) ---
     header = [
-        "Nombre: PACIENTE PRUEBA      Nº petición: 65122928",
-        "Apellidos: APELLIDO FICTICIO  Doctor: DOCTOR NO",
-        "Fecha nacimiento: 01/01/1980  Sexo: M  Origen: A. Primaria",
-        "Recepción: 24/06/25  Finalización: 24/06/25",
+        "Nombre: PACIENTE PRUEBA      Nº petición: 00000001",
+        "Apellidos: APELLIDO FICTICIO  Doctor: DR PRUEBA",
+        "Fecha nacimiento: 01/01/1980  Sexo: M  Nº Historia: HURH000001",
+        "Recepción: 13/11/25          Origen: Hospital de Pruebas",  # CAMBIO CLAVE AQUÍ
         "",
     ]
     y = write_lines(c, 50, y, header)
 
-    # --- Hematología (valores del JSON que pegaste) ---
+    # --- HEMATOLOGÍA ---
     hema = [
         "HEMATOLOGÍA",
-        "SERIE BLANCA",
-        "Leucocitos * 2.4 x10^3/µL 4 - 10.5",
-        "Neutrófilos % * 20.2 % 41 - 72",
-        "Linfocitos % ** 76.2 % 20 - 51",
-        "Monocitos % 2.1 % 2 - 12",
-        "Eosinófilos % 1.2 % 0 - 8",
-        "Basófilos % 0.3 % 0 - 1.8",
-        "Neutrófilos * 0.5 x10^3/µL 1.5 - 7.5",
-        "Linfocitos 1.8 x10^3/µL 0.9 - 5.2",
-        "Monocitos * 0.0 x10^3/µL 0.2 - 1.1",
-        "Eosinófilos 0.0 x10^3/µL 0.1 - 0.65",
-        "Basófilos 0.0 x10^3/µL 0 - 0.2",
-        "",
-        "SERIE ROJA",
-        "Hematíes 3.56 x10^6/µL 4.2 - 5.8",
-        "Hemoglobina 13.0 g/dL 13.5 - 17.5",
-        "Hematocrito 37.3 % 40 - 52",
-        "V.C.M 104.8 fL 80 - 96",
-        "H.C.M. 36.6 pg 27 - 33",
-        "C.H.C.M. 34.9 g/dL 32 - 36",
-        "R.D.W 13.0 % 11.5 - 14.5",
-        "",
-        "SERIE PLAQUETAR",
-        "Plaquetas 183 x10^3/µL 150 - 400",
-        "Volumen Plaquetar Medio 9.1 fL 7.4 - 10.4",
+        "Leucocitos 0.4 x10^3/µL 4.0 - 10.5",
+        "Neutrófilos % 1.0 % 40.0 - 74.0",
+        "Linfocitos % 98.7 % 20.0 - 51.0",
+        "Monocitos % 0.3 % 2.0 - 12.0",
+        "Eosinófilos % 0.0 % 0.0 - 7.0",
+        "Basófilos % 0.0 % 0.0 - 2.0",
+        "Neutrófilos 0.0 x10^3/µL 1.6 - 7.5",
+        "Linfocitos 0.4 x10^3/µL 1.0 - 4.0",
+        "Monocitos 0.0 x10^3/µL 0.2 - 0.8",
+        "Eosinófilos 0.0 x10^3/µL 0.02 - 0.5",
+        "Basófilos 0.0 x10^3/µL 0.0 - 0.2",
+        "Hematíes 4.50 x10^6/µL 4.20 - 5.90",
+        "Hemoglobina 13.5 g/dL 13.0 - 17.0",
+        "Hematocrito 40.0 % 40.0 - 54.0",
+        "V.C.M 90.0 fL 80.0 - 96.0",
+        "H.C.M. 30.0 pg 27.0 - 33.0",
+        "C.H.C.M. 33.0 g/dL 32.0 - 36.0",
+        "R.D.W 12.0 % 11.5 - 14.5",
+        "Plaquetas 150 x10^3/µL 150 - 450",
+        "Volumen Plaquetar Medio 9.0 fL 7.0 - 11.0",
         "",
     ]
     y = write_lines(c, 50, y, hema)
 
-    # Salto de página para ayudar al splitter
-    c.showPage()
-    c.setFont("Helvetica", 11)
-    y = height - 60
-
-    # --- Bioquímica (valores del JSON que pegaste) ---
+    # --- BIOQUÍMICA ---
     bio = [
-        "BIOQUÍMICA EN SANGRE",
-        "Prueba Resultado Unidades Valores de referencia",
-        "Glucosa 84 mg/dL 74 - 110",
-        "Urea * 58.1 mg/dL 12.8 - 42.8",
-        "Creatinina 0.82 mg/dL 0.7 - 1.3",
-        "Sodio 139 mmol/L 136 - 146",
-        "Potasio 4.1 mmol/L 3.5 - 5.1",
-        "Cloruro 105 mmol/L 101 - 109",
-        "Calcio 9.4 mg/dL 8.6 - 10.2",
-        "Fosfato 3.31 mg/dL 2.4 - 4.4",
-        "Ácido úrico 4.28 mg/dL 3.5 - 7.2",
-        "Alanina aminotransferasa (ALT/GPT) 15 U/L 1 - 50",
-        "Fosfatasa alcalina 44 U/L 40 - 129",
-        "Bilirrubina total 1.16 mg/dL 0.3 - 1.2",
-        "",
-        "Colesterol total 131 mg/dL",
-        "Colesterol HDL 58 mg/dL",
-        "Colesterol LDL 61 mg/dL",
-        "Colesterol no HDL 73 mg/dL",
-        "Triglicéridos 61 mg/dL",
-        "Indice de riesgo cardiovascular 2.3",
-        "",
-        "Hierro 131 µg/dL",
-        "Ferritina 552.2 ng/mL",
-        "Vitamina B12 196.6 pg/mL",
-        "Ácido fólico 10.0 ng/mL",
+        "BIOQUÍMICA",
+        "Glucosa 106 mg/dL",
+        "Urea 30 mg/dL",
+        "Creatinina 0.68 mg/dL",
+        "Sodio 141 mmol/L",
+        "Potasio 3.7 mmol/L",
+        "Cloro 110 mmol/L",
+        "Calcio 9.5 mg/dL",
+        "Fósforo 3.5 mg/dL",
+        "Colesterol total 180 mg/dL",
+        "Colesterol HDL 50 mg/dL",
+        "Colesterol LDL 110 mg/dL",
+        "Colesterol no HDL 130 mg/dL",
+        "Triglicéridos 120 mg/dL",
+        "Índice riesgo 3.6",
+        "Hierro 80 µg/dL",
+        "Ferritina 150 ng/mL",
+        "Vitamina B12 400 pg/mL",
         "",
     ]
-    write_lines(c, 50, y, bio)
+    y = write_lines(c, 50, y, bio)
+
+    # --- GASOMETRÍA ---
+    gaso = [
+        "GASOMETRÍA",
+        "pH 7.41 7.32 - 7.42",
+        "pCO2 39 mmHg 41 - 51",
+        "pO2 80 mmHg 25 - 40",
+        "CO2 Total (TCO2) 25.9 mmol/L 27 - 33",
+        "Saturación de Oxígeno (sO2) 96 % 90 - 100",
+        "Bicarbonato (CO3H-) 24.0 mmol/L 22 - 26",
+        "Bicarbonato Estandar (SBC) 24.0 mmol/L 22 - 26",
+        "Exceso de Bases (EB) 0.0 mmol/L -2 - +2",
+        "E. de bases en fluido extracelular (BEecf) 0.0 mmol/L -2 - +2",
+        "Lactato 1.0 mmol/L 0.5 - 2.2",
+    ]
+    write_lines(c, 50, y, gaso)
 
     c.save()
-    print(f"OK -> {out_pdf}")
+    print(f"✅ PDF regenerado con éxito en: {out_pdf}")
+
 
 if __name__ == "__main__":
     main()

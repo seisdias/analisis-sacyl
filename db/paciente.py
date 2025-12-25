@@ -31,3 +31,5 @@ class Paciente:
         cur = self.conn.cursor()
         row = cur.execute("SELECT * FROM paciente LIMIT 1").fetchone()
         return dict(row) if row else None
+
+

@@ -1,0 +1,102 @@
+.shell-topbar{
+  justify-content: space-between;
+}
+
+.shell{
+  height: calc(100vh - 57px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+.tabs{
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.tabs-bar{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: auto;
+}
+
+.tab{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tab.active{
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.tab .x{
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.tab .x:hover{
+  background: #f9fafb;
+}
+
+.tabs-content{
+  min-height: 0;
+  height: 100%;
+}
+
+.tabpane{
+  display: none;
+  height: 100%;
+}
+
+.tabpane.active{
+  display: block;
+  height: 100%;
+}
+
+iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Modal */
+.modal.hidden{ display:none; }
+.modal{
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.modal-card{
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 24px));
+  z-index: 210;
+}
+
+.modal-backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(17,24,39,.35);
+  z-index: 205;
+}

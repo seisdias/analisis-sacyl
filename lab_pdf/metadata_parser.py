@@ -10,14 +10,14 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 
-def parse_fecha_finalizacion(texto: str) -> str:
+def parse_fecha_Recepción(texto: str) -> str:
     """
-    Busca la fecha de 'Finalización: dd/mm/aa' y la convierte a 'YYYY-MM-DD'.
+    Busca la fecha de 'Recepción: dd/mm/aa' y la convierte a 'YYYY-MM-DD'.
     """
-    m = re.search(r"Finalización:\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2})", texto)
+    m = re.search(r"Recepción:\s*([0-9]{1,2}/[0-9]{1,2}/[0-9]{2})", texto)
     if not m:
-        raise ValueError("No se ha encontrado la fecha de Finalización en el PDF.")
-    fecha_str = m.group(1)  # p.ej. '8/01/25'
+        raise ValueError("No se ha encontrado la fecha de Recepción en el PDF.")
+    fecha_str = m.group(1)  # p.ej. '7/01/25'
     dt = datetime.strptime(fecha_str, "%d/%m/%y")
     return dt.strftime("%Y-%m-%d")
 
@@ -48,7 +48,7 @@ def parse_metadata(texto: str) -> Dict[str, Any]:
       - numero_peticion
       - origen
     """
-    fecha_analisis = parse_fecha_finalizacion(texto)
+    fecha_analisis = parse_fecha_Recepción(texto)
     numero_peticion = parse_numero_peticion(texto)
     origen = parse_origen(texto)
 
