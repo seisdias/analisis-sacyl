@@ -8,7 +8,7 @@ import { outOfRangeFlag, toISODate, parseISODate, extentTs, pctToTs, tsToPct, pe
 import { fetchSeries, fetchParamLimits, fetchTimeline, getTimelineCache } from "./chart_api.js";
 import { timelineStyle, groupTimelineEventsByDay, buildTimelineEvents, buildTimelineMarkLineData,
   buildGlobalTimelineMarkLine, buildTimelineMarkAreas, buildTimelineMarkAreaOption } from "./timeline_builders.js";
-import { detectCrossingsFlat, attachTreatmentDay } from "./clinical_crossings.js";
+import { detectCrossingsFlat, attachTreatmentDay } from "./clinical/clinical_crossings.js";
 
 
 let chart = null;
