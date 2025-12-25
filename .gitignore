@@ -9,3 +9,16 @@ __pycache__/
 .coveragerc
 /htmlcov/
 fix-authors.sh
+
+
+# Entorno virtual
+.venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Archivos temporales
+__pycache__/
+*.pyc

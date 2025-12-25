@@ -6,8 +6,9 @@ import threading
 import time
 import webbrowser
 from dataclasses import dataclass
-from js_bridge import JsBridge
-import os
+from app.js_bridge import JsBridge
+import logging
+logger = logging.getLogger(__name__)
 
 
 import uvicorn
@@ -56,7 +57,7 @@ def main() -> None:
 
         # Cuando cierres la ventana, paramos el server
         def on_window_closed():
-            print("Ventana cerrada → apagando servidor")
+            logger.info("Ventana cerrada -> apagando servidor")
             srv.server.should_exit = True
 
         win.events.closed += on_window_closed
