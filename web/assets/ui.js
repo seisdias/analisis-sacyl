@@ -667,7 +667,7 @@ export async function openLimitsModal(){
   modal.className = "modal";
 
   modal.innerHTML = `
-    <div class="modal-card" style="max-width: 900px;">
+    <div class="modal-card panel" style="max-width: 900px;">
       <div class="modal-head">
         <div>
           <div style="font-weight:700;">Límites por parámetro</div>
