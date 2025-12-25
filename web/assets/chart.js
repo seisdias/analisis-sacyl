@@ -4,7 +4,7 @@ import { state, labelOf } from "./state.js";
 import { renderKpis } from "./kpis.js";
 import { outOfRangeFlag, toISODate, parseISODate, extentTs, pctToTs, tsToPct, percentToDate, buildTreatmentIntervals,
  staggerMarkLineLabels, treatmentsAt, computeExtentWithHorizon, buildLimitsMarkLine, mergeMarkLines,
- safeParseTs } from "./chart_utils.js";
+ safeParseTs, renderTreatmentKpis } from "./chart_utils.js";
 import { fetchSeries, fetchParamLimits, fetchTimeline, getTimelineCache } from "./chart_api.js";
 import { timelineStyle, groupTimelineEventsByDay, buildTimelineEvents, buildTimelineMarkLineData,
   buildGlobalTimelineMarkLine, buildTimelineMarkAreas, buildTimelineMarkAreaOption } from "./timeline_builders.js";
@@ -155,6 +155,9 @@ export async function refreshChart() {
   globalExtent = { minTs: null, maxTs: null };
 
   const allFlats = [];
+  const crossingsByParam = new Map();
+  const limitByParam = new Map();
+
 
 
   for (const p of params) {
@@ -196,6 +199,12 @@ export async function refreshChart() {
       console.warn("No se pudieron cargar límites para", p, e);
       limitsMarkLine = null;
     }
+
+    crossingsByParam.set(p, crossingsForParam || []);
+    if (limitValueForParam != null) {
+      limitByParam.set(p, limitValueForParam);
+    }
+
 
     const rangesData = [
       ...(low != null ? [{ yAxis: low, name: "Min" }] : []),
@@ -564,6 +573,9 @@ export async function refreshChart() {
 
   // KPIs
   renderKpis(kpiData);
+  // KPIs de tratamiento (se añaden DESPUÉS, porque renderKpis hace innerHTML y borraría lo previo)
+  renderTreatmentKpis(treatmentIntervals, crossingsByParam, limitByParam, labelOf);
+
 
   // Pintado robusto: reset total
   chart.clear();
