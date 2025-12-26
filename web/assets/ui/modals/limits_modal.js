@@ -1,5 +1,6 @@
 // web/assets/ui/modals/limits_modal.js
-import { state } from "../../state.js";
+import { state, labelOf } from "../../state.js";
+import { apiJson } from "./modal_utils.js";
 
 export async function openLimitsModal(){
   const sid = state.sessionId || "";

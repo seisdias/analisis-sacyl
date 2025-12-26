@@ -3,12 +3,12 @@
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
 import { initChart, refreshChart } from "./charts/chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents } from "./ui.js";
+import { setStatus, buildGroupSelect, buildParamList, bindEvents } from "./ui.js";
+import { setDefaultEnabled } from "./clinical/defaults.js"
 import { openRangesModal } from "./ui/modals/ranges_modal.js"
 import { openTimelineModal } from "./ui/modals/timeline_modal.js"
 import { apiJson } from "./ui/modals/modal_utils.js"
 import { openLimitsModal } from "./ui/modals/limits_modal.js"
-
 
 async function init(){
   const statusEl = document.getElementById("status");
@@ -127,7 +127,6 @@ function buildGroupsFromRanges(meta, ranges) {
   return groups;
 }
 
-
 function bindImportPdfs(){
   const btn = document.getElementById("btnImportPdfs");
   const input = document.getElementById("fileImportPdfs");
@@ -210,12 +209,6 @@ function bindImportPdfs(){
     });
   }
 }
-
-/*****
-Timelines
-*****/
-
-
 
 function bindTimelineCrud(){
   const btn = document.getElementById("btnTimeline");
