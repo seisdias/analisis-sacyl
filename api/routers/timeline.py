@@ -28,24 +28,24 @@ def timeline(db: AnalysisDB = Depends(get_db)) -> Dict[str, Any]:
 
     return {
         "config": {"treatment_default_days": default_days},
-        "treatments": db.tratamiento.list_treatments(),
+        "treatments.js": db.tratamiento.list_treatments(),
         "hospital_stays": db.ingreso.list_hospital_stays(),
     }
 
 
-@router.post("/treatments")
+@router.post("/treatments.js")
 def create_treatment(body: TreatmentCreate, db: AnalysisDB = Depends(get_db)):
     tid = db.tratamiento.create_treatment(body.dict())
     return {"id": tid}
 
 
-@router.put("/treatments/{treatment_id}")
+@router.put("/treatments.js/{treatment_id}")
 def update_treatment(treatment_id: int, body: TreatmentUpdate, db: AnalysisDB = Depends(get_db)):
     db.tratamiento.update_treatment(treatment_id, body.dict())
     return {"ok": True}
 
 
-@router.delete("/treatments/{treatment_id}")
+@router.delete("/treatments.js/{treatment_id}")
 def delete_treatment(treatment_id: int, db: AnalysisDB = Depends(get_db)):
     db.tratamiento.delete_treatment(treatment_id)
     return {"ok": True}

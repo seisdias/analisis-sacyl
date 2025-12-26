@@ -1,14 +1,17 @@
 // web/assets/charts/chart.js
 
 import { state, labelOf } from "../state.js";
-import { outOfRangeFlag, toISODate, parseISODate, extentTs, pctToTs, tsToPct, percentToDate, buildTreatmentIntervals,
- staggerMarkLineLabels, treatmentsAt, computeExtentWithHorizon, buildLimitsMarkLine, mergeMarkLines,
- renderTreatmentKpis } from "./chart_utils.js";
+import { buildTreatmentIntervals, treatmentsAt } from "./utils/treatments.js"
+import { staggerMarkLineLabels, buildLimitsMarkLine, mergeMarkLines } from "./utils/marklines.js"
+import { toISODate, parseISODate } from "./utils/date.js"
+import { extentTs, pctToTs, tsToPct, percentToDate, computeExtentWithHorizon}  from "./utils/scale.js"
+import { renderTreatmentKpis } from "../kpis/treatment_kpis.js"
 import { fetchSeries, fetchParamLimits, fetchTimeline, getTimelineCache } from "./chart_api.js";
 import { timelineStyle, groupTimelineEventsByDay, buildTimelineEvents, buildTimelineMarkLineData,
   buildGlobalTimelineMarkLine, buildTimelineMarkAreas, buildTimelineMarkAreaOption } from "../timeline/timeline_builders.js";
 import { detectCrossingsFlat, attachTreatmentDay } from "../clinical/clinical_crossings.js";
 import { renderKpis } from "../kpis/kpis.js";
+import { DAY } from "./utils/date.js"
 
 
 let chart = null;
@@ -81,6 +84,13 @@ function syncZoomInputsFromState() {
       `Mostrando: ${toISODate(a)} → ${toISODate(b)} (zoom ${zoomStart.toFixed(1)}%–${zoomEnd.toFixed(1)}%)`;
   }
 }
+
+function outOfRangeFlag(value, low, high) {
+  if (low != null && value < low) return "below";
+  if (high != null && value > high) return "above";
+  return null;
+}
+
 
 // -----------------------------
 // Init

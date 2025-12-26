@@ -3,7 +3,9 @@
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
 import { initChart, refreshChart } from "./charts/chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal, openRangesModal, openLimitsModal } from "./ui.js";
+import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openLimitsModal } from "./ui.js";
+import { openRangesModal } from "./ui/modals/ranges_modal.js"
+import { openTimelineModal } from "./ui/modals/timeline_modal.js"
 
 
 async function init(){
@@ -211,23 +213,7 @@ function bindImportPdfs(){
 Timelines
 *****/
 
-async function apiJson(method, path, body){
-  const opts = { method, headers: {} };
-  if(body !== undefined){
-    opts.headers["Content-Type"] = "application/json";
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(`${state.base}${path}`, opts);
-  if(!res.ok){
-    let txt = `${res.status} ${res.statusText}`;
-    try{
-      const j = await res.json();
-      txt = j.detail || j.error || JSON.stringify(j);
-    }catch{}
-    throw new Error(txt);
-  }
-  return await res.json();
-}
+
 
 function bindTimelineCrud(){
   const btn = document.getElementById("btnTimeline");
