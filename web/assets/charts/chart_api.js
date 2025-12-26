@@ -1,7 +1,7 @@
-// web/assets/chart_api.js
+// web/assets/charts/chart_api.js
 
-import { apiGet } from "./api.js";
-import { state } from "./state.js";
+import { apiGet } from "./../api.js";
+import { state } from "./../state.js";
 
 let timelineCache = null; // { config, treatments, hospital_stays } | null
 
