@@ -1,8 +1,14 @@
+// web/assets/app.js
+
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
-import { initChart, refreshChart } from "./chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openTimelineModal, openRangesModal, openLimitsModal } from "./ui.js";
-
+import { initChart, refreshChart } from "./charts/chart.js";
+import { setStatus, buildGroupSelect, buildParamList, bindEvents } from "./ui.js";
+import { setDefaultEnabled } from "./clinical/defaults.js"
+import { openRangesModal } from "./ui/modals/ranges_modal.js"
+import { openTimelineModal } from "./ui/modals/timeline_modal.js"
+import { apiJson } from "./ui/modals/modal_utils.js"
+import { openLimitsModal } from "./ui/modals/limits_modal.js"
 
 async function init(){
   const statusEl = document.getElementById("status");
@@ -20,13 +26,9 @@ async function init(){
     const urlParams = new URLSearchParams(window.location.search);
     state.sessionId = urlParams.get("session_id") || "";
     if(!state.sessionId) throw new Error("Falta parámetro ?session_id= en la URL");
-
+/*
     const url = new URL(window.location.href);
-    state.sessionId = url.searchParams.get("session_id");
-
-    if(!state.sessionId){
-    console.warn("Dashboard sin session_id (modo legacy)");
-}
+    state.sessionId = url.searchParams.get("session_id");*/
 
     state.meta = await apiGet(state.base, "/meta");
     const rangesResp = await apiGet(
@@ -121,7 +123,6 @@ function buildGroupsFromRanges(meta, ranges) {
   return groups;
 }
 
-
 function bindImportPdfs(){
   const btn = document.getElementById("btnImportPdfs");
   const input = document.getElementById("fileImportPdfs");
@@ -203,28 +204,6 @@ function bindImportPdfs(){
       }
     });
   }
-}
-
-/*****
-Timelines
-*****/
-
-async function apiJson(method, path, body){
-  const opts = { method, headers: {} };
-  if(body !== undefined){
-    opts.headers["Content-Type"] = "application/json";
-    opts.body = JSON.stringify(body);
-  }
-  const res = await fetch(`${state.base}${path}`, opts);
-  if(!res.ok){
-    let txt = `${res.status} ${res.statusText}`;
-    try{
-      const j = await res.json();
-      txt = j.detail || j.error || JSON.stringify(j);
-    }catch{}
-    throw new Error(txt);
-  }
-  return await res.json();
 }
 
 function bindTimelineCrud(){

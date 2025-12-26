@@ -1,10 +1,9 @@
-// web/assets/timeline_builders.js
+// web/assets/timeline/timeline_builders.js
 
-import { safeParseTs, uniqByKey } from "./chart_utils.js";
+import { safeParseTs, uniqByKey } from "./timeline_utils.js";
 
 export function timelineStyle(kind) {
   // No especifico colores globales (para no “imponer” estilo), pero sí diferenciamos patrón y grosor.
-  // Si luego quieres colores específicos, lo ajustamos en 2 minutos.
   if (kind === "hospital_admission") return { type: "solid", width: 2, opacity: 0.85 };
   if (kind === "hospital_discharge") return { type: "dashed", width: 2, opacity: 0.85 };
   if (kind === "treatment_start") return { type: "solid", width: 1, opacity: 0.70 };

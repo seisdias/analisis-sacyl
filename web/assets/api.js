@@ -1,3 +1,5 @@
+// web/assets/api.js
+
 export function getBaseUrl(){
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get("base") || "";
