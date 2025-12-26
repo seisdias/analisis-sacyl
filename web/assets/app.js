@@ -5,8 +5,7 @@ import { state } from "./state.js";
 import { initChart, refreshChart } from "./charts/chart.js";
 import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openLimitsModal } from "./ui.js";
 import { openRangesModal } from "./ui/modals/ranges_modal.js"
-import { openTimelineModal } from "./ui/modals/timeline_modal.js"
-
+import { openTimelineModal, apiJson } from "./ui/modals/timeline_modal.js"
 
 async function init(){
   const statusEl = document.getElementById("status");

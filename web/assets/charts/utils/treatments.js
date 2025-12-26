@@ -1,5 +1,8 @@
 // web/assets/charts/utils/treatments.js
 
+import { safeParseTs } from "../../timeline/timeline_utils.js"
+import { DAY } from "./date.js"
+
 export function buildTreatmentIntervals(timeline) {
   const out = [];
   if (!timeline) return out;

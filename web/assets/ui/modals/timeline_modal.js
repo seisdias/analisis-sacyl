@@ -252,7 +252,11 @@ export function openTimelineModal(timeline, { onChanged } = {}){
   }
 }
 
-async function apiJson(method, path, body){
+export function apiJson(method, path, body){
+  return apiJsonInternal(method, path, body)
+}
+
+async function apiJsonInternal(method, path, body){
   const opts = { method, headers: {} };
   if(body !== undefined){
     opts.headers["Content-Type"] = "application/json";
