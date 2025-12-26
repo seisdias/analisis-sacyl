@@ -26,13 +26,9 @@ async function init(){
     const urlParams = new URLSearchParams(window.location.search);
     state.sessionId = urlParams.get("session_id") || "";
     if(!state.sessionId) throw new Error("Falta parámetro ?session_id= en la URL");
-
+/*
     const url = new URL(window.location.href);
-    state.sessionId = url.searchParams.get("session_id");
-
-    if(!state.sessionId){
-    console.warn("Dashboard sin session_id (modo legacy)");
-}
+    state.sessionId = url.searchParams.get("session_id");*/
 
     state.meta = await apiGet(state.base, "/meta");
     const rangesResp = await apiGet(
