@@ -3,9 +3,12 @@
 import { getBaseUrl, apiGet } from "./api.js";
 import { state } from "./state.js";
 import { initChart, refreshChart } from "./charts/chart.js";
-import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents, openLimitsModal } from "./ui.js";
+import { setStatus, buildGroupSelect, setDefaultEnabled, buildParamList, bindEvents } from "./ui.js";
 import { openRangesModal } from "./ui/modals/ranges_modal.js"
-import { openTimelineModal, apiJson } from "./ui/modals/timeline_modal.js"
+import { openTimelineModal } from "./ui/modals/timeline_modal.js"
+import { apiJson } from "./ui/modals/modal_utils.js"
+import { openLimitsModal } from "./ui/modals/limits_modal.js"
+
 
 async function init(){
   const statusEl = document.getElementById("status");
