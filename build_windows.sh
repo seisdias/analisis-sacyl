@@ -30,6 +30,10 @@ python -V
 echo "[INFO] Limpiando builds anteriores..."
 rm -rf build dist *.spec
 
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-webview.txt
+python -m pip install pyinstaller
+
 # 4. Ejecutar PyInstaller
 echo "[INFO] Ejecutando PyInstaller..."
 python -m PyInstaller \
