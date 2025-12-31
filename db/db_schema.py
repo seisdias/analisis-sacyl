@@ -120,6 +120,14 @@ CREATE TABLE IF NOT EXISTS orina (
     FOREIGN KEY (analisis_id) REFERENCES analisis(id) ON DELETE CASCADE
 );
 
+-- Evitar duplicados: 1 fila por analisis_id en tablas detalle
+CREATE UNIQUE INDEX IF NOT EXISTS ux_hematologia_analisis_id ON hematologia(analisis_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_bioquimica_analisis_id ON bioquimica(analisis_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_gasometria_analisis_id ON gasometria(analisis_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_orina_analisis_id ON orina(analisis_id);
+
+
+
 -- ================== CONFIG ===================
 CREATE TABLE IF NOT EXISTS app_config (
     key TEXT PRIMARY KEY,
