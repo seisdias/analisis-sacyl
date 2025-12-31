@@ -20,5 +20,12 @@ dist/
 *.spec
 
 # Archivos temporales
-__pycache__/
 *.pyc
+
+
+.venv/, app/.venv/
+
+
+build/, dist/, htmlcov/
+
+app/data/uploads/*.db y *.db
