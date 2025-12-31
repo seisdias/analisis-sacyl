@@ -25,10 +25,20 @@ class Gasometria:
         values = [analisis_id] + [d.get(f) for f in fields[1:]]
 
         cur = self.conn.cursor()
+        # --- UPSERT por analisis_id ---
+        update_cols = [f for f in fields if f != "analisis_id"]
+        set_clause = ", ".join([f"{c}=excluded.{c}" for c in update_cols])
+
         cur.execute(
-            f"INSERT INTO gasometria ({','.join(fields)}) VALUES ({','.join(['?']*len(fields))})",
+            f"""
+            INSERT INTO gasometria ({",".join(fields)})
+            VALUES ({",".join(["?"] * len(fields))})
+            ON CONFLICT(analisis_id) DO UPDATE SET
+                {set_clause}
+            """,
             values,
         )
+
         self.conn.commit()
 
     def list(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
