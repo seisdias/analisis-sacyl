@@ -99,3 +99,15 @@ def update_ranges_bulk(body: BulkRangeUpdate) -> Dict[str, Any]:
         return {"ok": True, "ranges": _ranges_to_payload(_RM)}
 
 
+@router.get("/histograms/dates")
+def get_histogram_dates(db: AnalysisDB = Depends(get_db)):
+    """
+    Devuelve fechas (ISO YYYY-MM-DD) con analíticas de hematología disponibles.
+    (Solo lectura; delega en el componente Hematologia)
+    """
+    dates = db.hematologia.list_distinct_dates()
+    return {"dates": dates}
+
+
+
+
