@@ -84,3 +84,25 @@ class Hematologia:
         # row_factory = sqlite3.Row → acceso por nombre
         return [r["fecha_analisis"] for r in rows]
 
+
+    def get_by_fecha(self, fecha_analisis: str) -> Optional[Dict[str, Any]]:
+        """
+        Devuelve la fila de hematología correspondiente a una fecha concreta.
+        Si hay varios análisis el mismo día, devuelve el más reciente (mayor analisis.id).
+        """
+        cur = self.conn.cursor()
+        row = cur.execute(
+            """
+            SELECT h.*
+            FROM hematologia h
+            JOIN analisis a ON h.analisis_id = a.id
+            WHERE a.fecha_analisis = ?
+            ORDER BY a.id DESC
+            LIMIT 1
+            """,
+            (fecha_analisis,),
+        ).fetchone()
+
+        return dict(row) if row else None
+
+
