@@ -13,6 +13,7 @@ source =
 #    analisis_view/orina_tab.py
 #    analisis_view/view.py
 #    ranges/dialog.py
+disable_warnings = module-not-imported
 
 [report]
 # Opcional: vuelve a omitirlos también en el informe
