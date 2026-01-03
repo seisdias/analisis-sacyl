@@ -9,6 +9,8 @@ import { openRangesModal } from "./ui/modals/ranges_modal.js"
 import { openTimelineModal } from "./ui/modals/timeline_modal.js"
 import { apiJson } from "./ui/modals/modal_utils.js"
 import { openLimitsModal } from "./ui/modals/limits_modal.js"
+import { openHistogramsModal } from "./ui/modals/histograms_modal.js";
+
 
 async function init(){
   const statusEl = document.getElementById("status");
@@ -53,6 +55,7 @@ async function init(){
     bindTimelineCrud();
     bindRanges();
     bindLimits();
+    bindHistogram();
 
 
 
@@ -272,6 +275,21 @@ function bindLimits(){
   });
 
 }
+
+function bindHistogram(){
+    const btnHistograms = document.getElementById("btnHistograms");
+    if(!btnHistograms){
+      return
+    }
+
+    btnHistograms.addEventListener("click", async () => {
+      await openHistogramsModal();
+      //await refreshChart();  // no es necesario refrescar el grafico tras esto.
+    });
+}
+
+
+
 
 
 

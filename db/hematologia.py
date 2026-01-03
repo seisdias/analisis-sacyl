@@ -62,3 +62,47 @@ class Hematologia:
         rows = cur.execute(sql, params).fetchall()
         aux = [dict(r) for r in rows]
         return aux
+
+    def list_distinct_dates(self) -> List[str]:
+        """
+        Devuelve la lista de fechas (ISO YYYY-MM-DD) para las que existe
+        al menos una analítica de hematología.
+        Ordenadas de más reciente a más antigua.
+        """
+        cur = self.conn.cursor()
+
+        rows = cur.execute(
+            """
+            SELECT DISTINCT analisis.fecha_analisis
+            FROM hematologia
+            JOIN analisis ON hematologia.analisis_id = analisis.id
+            WHERE analisis.fecha_analisis IS NOT NULL
+            ORDER BY analisis.fecha_analisis DESC
+            """
+        ).fetchall()
+
+        # row_factory = sqlite3.Row → acceso por nombre
+        return [r["fecha_analisis"] for r in rows]
+
+
+    def get_by_fecha(self, fecha_analisis: str) -> Optional[Dict[str, Any]]:
+        """
+        Devuelve la fila de hematología correspondiente a una fecha concreta.
+        Si hay varios análisis el mismo día, devuelve el más reciente (mayor analisis.id).
+        """
+        cur = self.conn.cursor()
+        row = cur.execute(
+            """
+            SELECT h.*
+            FROM hematologia h
+            JOIN analisis a ON h.analisis_id = a.id
+            WHERE a.fecha_analisis = ?
+            ORDER BY a.id DESC
+            LIMIT 1
+            """,
+            (fecha_analisis,),
+        ).fetchone()
+
+        return dict(row) if row else None
+
+
