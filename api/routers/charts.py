@@ -19,8 +19,7 @@ from charts.proxy_histograms import (
     plt_size_distribution_proxy,
     wbc_differential_proxy,
 )
-
-
+import re
 
 router = APIRouter(tags=["charts"])
 
@@ -145,6 +144,14 @@ def histogram_proxy(
                 "error": "missing_date",
                 "message": "Debe seleccionar una fecha con analítica disponible",
             },
+        )
+
+    ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+    if not ISO_DATE_RE.match(date):
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "invalid_date_format", "message": "Formato esperado: YYYY-MM-DD"},
         )
 
     h = db.hematologia.get_by_fecha(date)
