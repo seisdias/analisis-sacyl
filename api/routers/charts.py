@@ -14,6 +14,12 @@ from db import AnalysisDB
 from api.deps import get_db
 from pydantic import BaseModel
 from typing import Optional
+from charts.proxy_histograms import (
+    rbc_size_distribution_proxy,
+    plt_size_distribution_proxy,
+    wbc_differential_proxy,
+)
+import re
 
 router = APIRouter(tags=["charts"])
 
@@ -97,5 +103,119 @@ def update_ranges_bulk(body: BulkRangeUpdate) -> Dict[str, Any]:
             # min/max pueden venir como null
             _RM.update_range(key, v.get("min"), v.get("max"))
         return {"ok": True, "ranges": _ranges_to_payload(_RM)}
+
+
+@router.get("/histograms/dates")
+def get_histogram_dates(db: AnalysisDB = Depends(get_db)):
+    """
+    Devuelve fechas (ISO YYYY-MM-DD) con analíticas de hematología disponibles.
+    (Solo lectura; delega en el componente Hematologia)
+    """
+    dates = db.hematologia.list_distinct_dates()
+    return {"dates": dates}
+
+
+from fastapi import HTTPException
+
+@router.get("/histograms/proxy")
+def histogram_proxy(
+    date: str = Query(..., description="Fecha ISO YYYY-MM-DD"),
+    type: str = Query(..., description="Tipo de histograma: rbc | plt | wbc"),
+    db: AnalysisDB = Depends(get_db),
+):
+    """
+    Devuelve datos base para histogramas proxy (no bins reales).
+    """
+
+    if not type or type not in ("rbc", "plt", "wbc"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "invalid_histogram_type",
+                "message": "Debe seleccionar un tipo de histograma válido",
+                "allowed": ["rbc", "plt", "wbc"],
+            },
+        )
+
+    if not date:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "missing_date",
+                "message": "Debe seleccionar una fecha con analítica disponible",
+            },
+        )
+
+    ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+    if not ISO_DATE_RE.match(date):
+        raise HTTPException(
+            status_code=400,
+            detail={"error": "invalid_date_format", "message": "Formato esperado: YYYY-MM-DD"},
+        )
+
+    h = db.hematologia.get_by_fecha(date)
+    if not h:
+        raise HTTPException(status_code=404, detail="No hay hematología para esa fecha")
+
+    if type == "rbc":
+        payload = rbc_size_distribution_proxy(
+            vcm=h.get("vcm"),
+            rdw=h.get("rdw"),
+        )
+        if not payload.get("ok"):
+            raise HTTPException(status_code=422, detail=payload.get("reason", "No se pudo calcular proxy RBC"))
+
+        return {
+            "date": date,
+            "type": type,
+            "is_proxy": True,
+            "raw": h,
+            **payload,
+        }
+
+    if type == "plt":
+        payload = plt_size_distribution_proxy(
+            vpm=h.get("vpm"),
+            plaquetas=h.get("plaquetas"),
+        )
+        if not payload.get("ok"):
+            raise HTTPException(status_code=422, detail=payload.get("reason", "No se pudo calcular proxy PLT"))
+
+        return {
+            "date": date,
+            "type": type,
+            "is_proxy": True,
+            "raw": h,
+            **payload,
+        }
+
+    if type == "wbc":
+        payload = wbc_differential_proxy(
+            neutro_pct=h.get("neutrofilos_pct"),
+            linf_pct=h.get("linfocitos_pct"),
+            mono_pct=h.get("monocitos_pct"),
+            eos_pct=h.get("eosinofilos_pct"),
+            baso_pct=h.get("basofilos_pct"),
+            neutro_abs=h.get("neutrofilos_abs"),
+            linf_abs=h.get("linfocitos_abs"),
+            mono_abs=h.get("monocitos_abs"),
+            eos_abs=h.get("eosinofilos_abs"),
+            baso_abs=h.get("basofilos_abs"),
+        )
+        if not payload.get("ok"):
+            raise HTTPException(status_code=422, detail=payload.get("reason", "No se pudo calcular proxy WBC"))
+
+        return {
+            "date": date,
+            "type": type,
+            "is_proxy": True,
+            "raw": h,
+            **payload,
+        }
+
+
+
+
 
 
