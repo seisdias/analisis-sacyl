@@ -1,11 +1,7 @@
 [run]
-branch = True
-source =
-    .
-
 # Medimos cobertura sobre el paquete analisis_view,
 # pero omitimos los módulos de GUI (Tk / tksheet)
- omit =
+omit =
     analisis_view/base_tab.py
     analisis_view/hematology_tab.py
     analisis_view/bioquimica_tab.py
@@ -13,7 +9,6 @@ source =
     analisis_view/orina_tab.py
     analisis_view/view.py
     ranges/dialog.py
- disable_warnings = module-not-imported
 
 [report]
 # Opcional: vuelve a omitirlos también en el informe
