@@ -22,7 +22,7 @@ class JsBridge:
             return None
 
         paths = w.create_file_dialog(
-            webview.OPEN_DIALOG,
+            webview.FileDialog.OPEN,
             allow_multiple=False,
             file_types=(
                 "SQLite DB (*.db;*.sqlite;*.sqlite3)",
@@ -40,7 +40,7 @@ class JsBridge:
             return None
 
         paths = w.create_file_dialog(
-            webview.SAVE_DIALOG,
+            webview.FileDialog.SAVE,
             allow_multiple=False,
             save_filename="paciente.db",
             file_types=(
@@ -50,7 +50,7 @@ class JsBridge:
         )
         if not paths:
             return None
-        return paths[0]
+        return paths
 
 
     def pick_import_pdfs(self) -> list[str]:
@@ -59,9 +59,13 @@ class JsBridge:
         Devuelve una lista de rutas absolutas.
         """
         paths = webview.windows[0].create_file_dialog(
-            webview.OPEN_DIALOG,
+            webview.FileDialog.OPEN,
             allow_multiple=True,
-            file_types=("PDF (*.pdf)", "*.pdf"),
+            file_types=("PDF (*.pdf)",
+                        "All files (*.*)"),
         )
+        if not paths:
+            return None
+        print(paths)
         return list(paths or [])
 

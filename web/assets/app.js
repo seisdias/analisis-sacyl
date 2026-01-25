@@ -66,10 +66,21 @@ async function init(){
   }
 }
 
-init();
+if (window.pywebview) {
+  document.addEventListener("pywebviewready", init, { once: true });
+} else {
+  init();
+}
+//function hasPywebview(){
+//  return !!(window.pywebview && window.pywebview.api);
+//}
+
+function getPywebviewApi(){
+  return window.pywebview?.api || window.parent?.pywebview?.api || null;
+}
 
 function hasPywebview(){
-  return !!(window.pywebview && window.pywebview.api);
+  return !!getPywebviewApi();
 }
 
 function buildGroupsFromRanges(meta, ranges) {
@@ -130,42 +141,71 @@ function bindImportPdfs(){
   const btn = document.getElementById("btnImportPdfs");
   const input = document.getElementById("fileImportPdfs");
   const statusEl = document.getElementById("status");
+
   if(!btn) return;
 
   btn.addEventListener("click", async () => {
+    //console.log("[IMPORT PDF] click -> hasPywebview:", hasPywebview());
+    //console.log("[IMPORT PDF] pywebview.api:", window.pywebview?.api);
+    //console.log("[IMPORT PDF] pick_import_pdfs:", window.pywebview?.api?.pick_import_pdfs);
     try{
-      // --- pywebview: rutas nativas ---
-      if(hasPywebview() && window.pywebview.api.pick_import_pdfs){
-        const paths = await window.pywebview.api.pick_import_pdfs();
-        if(!paths || paths.length === 0) return;
+//      // --- pywebview: rutas nativas ---
+//      if(hasPywebview() && window.pywebview.api.pick_import_pdfs){
+//        const paths = await window.pywebview.api.pick_import_pdfs();
+//        if(!paths || paths.length === 0) return;
+//
+//        setStatus(true, statusEl, "Importando PDFs…");
+//
+//        const res = await fetch(`${state.base}/imports/from_paths?session_id=${encodeURIComponent(state.sessionId)}`, {
+//          method: "POST",
+//          headers: {"Content-Type":"application/json"},
+//          body: JSON.stringify({ pdf_paths: paths }),
+//        });
+//        if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+//        const j = await res.json();
+//
+//        await refreshChart();
+//
+//        if(j.errors && j.errors.length){
+//          setStatus(false, statusEl, `Importado: ${j.imported}, Errores: ${j.errors.length}`);
+//        } else {
+//          setStatus(true, statusEl, `Importado: ${j.imported}`);
+//        }
+//        return;
+//      }
+//
+//      // --- navegador: upload ---
+//      if(input){
+//        input.value = "";
+//        input.click();
+//      } else {
+//        alert("Importación no disponible: falta input file");
+//      }
+        // --- pywebview: rutas nativas ---
+        const api = getPywebviewApi();
+        console.log("[IMPORT PDF] api:", api);
+        if(api?.pick_import_pdfs){
+          const paths = await api.pick_import_pdfs();
+          if(!paths || paths.length === 0) return;
 
-        setStatus(true, statusEl, "Importando PDFs…");
+          setStatus(true, statusEl, "Importando PDFs…");
 
-        const res = await fetch(`${state.base}/imports/from_paths?session_id=${encodeURIComponent(state.sessionId)}`, {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ pdf_paths: paths }),
-        });
-        if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const j = await res.json();
+          const res = await fetch(`${state.base}/imports/from_paths?session_id=${encodeURIComponent(state.sessionId)}`, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ session_id: state.sessionId, pdf_paths: paths }),          });
+          if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          const j = await res.json();
 
-        await refreshChart();
+          await refreshChart();
 
-        if(j.errors && j.errors.length){
-          setStatus(false, statusEl, `Importado: ${j.imported}, Errores: ${j.errors.length}`);
-        } else {
-          setStatus(true, statusEl, `Importado: ${j.imported}`);
+          if(j.errors && j.errors.length){
+            setStatus(false, statusEl, `Importado: ${j.imported}, Errores: ${j.errors.length}`);
+          } else {
+            setStatus(true, statusEl, `Importado: ${j.imported}`);
+          }
+          return;
         }
-        return;
-      }
-
-      // --- navegador: upload ---
-      if(input){
-        input.value = "";
-        input.click();
-      } else {
-        alert("Importación no disponible: falta input file");
-      }
     } catch(e){
       console.error(e);
       setStatus(false, statusEl, `Error importando: ${e.message}`);

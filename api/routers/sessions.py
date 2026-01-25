@@ -30,7 +30,7 @@ def sessions_new(req: NewSessionRequest):
     y registra sesión. Si ya existe, NO sobrescribe: devuelve 409.
     """
     p = Path(req.db_path).expanduser()
-
+    print("DB path recibido:", repr(p))
     # seguridad básica
     if p.suffix.lower() not in (".db", ".sqlite", ".sqlite3"):
         raise HTTPException(status_code=400, detail="Extensión no válida (esperado .db/.sqlite/.sqlite3)")

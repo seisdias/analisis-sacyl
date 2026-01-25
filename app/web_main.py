@@ -62,7 +62,7 @@ def main() -> None:
 
         win.events.closed += on_window_closed
 
-        webview.start()
+        webview.start(debug=False) #cambiar por True si hace falta Debug
     except ModuleNotFoundError:
         # Fallback a navegador (modo web)
         webbrowser.open(shell_url)
