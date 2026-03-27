@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from api.routers.core import router as core_router
+from api.routers.export_analytics import router as export_analytics_router
 from api.routers.sessions import router as sessions_router
 from api.routers.imports import router as imports_router
 from api.routers.charts import router as charts_router
@@ -27,5 +28,6 @@ app.include_router(charts_router)
 app.include_router(patient_router)
 app.include_router(timeline_router)
 app.include_router(limits_router)
+app.include_router(export_analytics_router)
 
 

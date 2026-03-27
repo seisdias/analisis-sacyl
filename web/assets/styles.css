@@ -141,4 +141,26 @@ button:hover{ background:#f9fafb; }
 }
 
 
+.export-analytics-modal-card{
+  max-width: 980px;
+  width: 92vw;
+  margin: 40px auto 0 auto;
+}
+
+.ea-textarea{
+  width: 100%;
+  min-height: 110px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+#eaResult{
+  min-height: 140px;
+}
+
+
 

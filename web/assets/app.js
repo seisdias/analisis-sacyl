@@ -10,6 +10,7 @@ import { openTimelineModal } from "./ui/modals/timeline_modal.js"
 import { apiJson } from "./ui/modals/modal_utils.js"
 import { openLimitsModal } from "./ui/modals/limits_modal.js"
 import { openHistogramsModal } from "./ui/modals/histograms_modal.js";
+import { openExportAnalyticsModal } from "./ui/modals/export_analytics_modal.js";
 
 
 async function init(){
@@ -56,6 +57,7 @@ async function init(){
     bindRanges();
     bindLimits();
     bindHistogram();
+    bindExportAnalytics();
 
 
 
@@ -286,6 +288,26 @@ function bindHistogram(){
       await openHistogramsModal();
       //await refreshChart();  // no es necesario refrescar el grafico tras esto.
     });
+}
+
+
+function bindExportAnalytics(){
+  const btn = document.getElementById("btnExportAnalytics");
+  if(!btn){
+    return;
+  }
+
+  btn.addEventListener("click", async () => {
+    const statusEl = document.getElementById("status");
+    try{
+      await openExportAnalyticsModal({
+        sessionId: state.sessionId,
+      });
+    }catch(e){
+      console.error(e);
+      setStatus(false, statusEl, `Error exportando analítica: ${e.message}`);
+    }
+  });
 }
 
 
