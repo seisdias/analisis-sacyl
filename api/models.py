@@ -21,12 +21,11 @@ class NewSessionRequest(BaseModel):
 
 
 class ImportPathsRequest(BaseModel):
-    session_id: str
     pdf_paths: List[str]
 
 
 class ImportResult(BaseModel):
-    ok: int
+    imported: int
     errors: List[str]
 
 

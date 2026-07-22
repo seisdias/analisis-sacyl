@@ -12,8 +12,8 @@ class Hematologia:
         self.conn = conn
         self.analisis = analisis
 
-    def insert(self, d: Dict[str, Any]) -> None:
-        analisis_id = self.analisis.ensure(d)
+    def insert(self, d: Dict[str, Any], commit: bool = True) -> None:
+        analisis_id = self.analisis.ensure(d, commit=commit)
 
         fields = [
             "analisis_id",
@@ -41,7 +41,8 @@ class Hematologia:
             values,
         )
 
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
     def list(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         cur = self.conn.cursor()
@@ -104,5 +105,4 @@ class Hematologia:
         ).fetchone()
 
         return dict(row) if row else None
-
 

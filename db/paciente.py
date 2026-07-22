@@ -9,7 +9,7 @@ class Paciente:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def save(self, info: Dict[str, Any]) -> None:
+    def save(self, info: Dict[str, Any], commit: bool = True) -> None:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM paciente")
         cur.execute(
@@ -25,11 +25,11 @@ class Paciente:
                 info.get("numero_historia"),
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
 
     def get(self) -> Optional[Dict[str, Any]]:
         cur = self.conn.cursor()
         row = cur.execute("SELECT * FROM paciente LIMIT 1").fetchone()
         return dict(row) if row else None
-
 

@@ -65,7 +65,7 @@ class AnalysisDB:
         self.is_open = True
 
     def close(self) -> None:
-        if self.conn and self.is_open:
+        if self.conn:
             self.conn.close()
 
         self.conn = None
@@ -95,48 +95,46 @@ class AnalysisDB:
     #   API FACHADA
     # --------------------
     # Analisis
-    def create_analisis(self, info: Dict[str, Any]) -> int:
-        return self.analisis.create(info)
+    def create_analisis(self, info: Dict[str, Any], commit: bool = True) -> int:
+        return self.analisis.create(info, commit=commit)
 
     def list_analisis(self, limit: Optional[int] = None):
         return self.analisis.list(limit)
 
     # Paciente
-    def save_patient(self, d: Dict[str, Any]):
-        return self.paciente.save(d)
+    def save_patient(self, d: Dict[str, Any], commit: bool = True):
+        return self.paciente.save(d, commit=commit)
 
     def get_patient(self):
         return self.paciente.get()
 
     # Hematologia
-    def insert_hematologia(self, d: Dict[str, Any]):
-        return self.hematologia.insert(d)
+    def insert_hematologia(self, d: Dict[str, Any], commit: bool = True):
+        return self.hematologia.insert(d, commit=commit)
 
     def list_hematologia(self, limit=None):
         return self.hematologia.list(limit)
 
     # Bioquímica
-    def insert_bioquimica(self, d: Dict[str, Any]):
-        return self.bioquimica.insert(d)
+    def insert_bioquimica(self, d: Dict[str, Any], commit: bool = True):
+        return self.bioquimica.insert(d, commit=commit)
 
     def list_bioquimica(self, limit=None):
         return self.bioquimica.list(limit)
 
     # Gasometría
-    def insert_gasometria(self, d: Dict[str, Any]):
-        return self.gasometria.insert(d)
+    def insert_gasometria(self, d: Dict[str, Any], commit: bool = True):
+        return self.gasometria.insert(d, commit=commit)
 
     def list_gasometria(self, limit=None):
         return self.gasometria.list(limit)
 
     # Orina
-    def insert_orina(self, d: Dict[str, Any]):
-        return self.orina.insert(d)
+    def insert_orina(self, d: Dict[str, Any], commit: bool = True):
+        return self.orina.insert(d, commit=commit)
 
     def list_orina(self, limit=None):
         return self.orina.list(limit)
-
-
 
 
 

@@ -313,7 +313,7 @@ btnCreateDb.addEventListener("click", async () => {
 
       setPill(true, shellStatus, "Creando BD…");
 
-      const resp = await postJson("/sessions/new", { db_path: path, overwrite: true }, { signal: openAbort.signal });
+      const resp = await postJson("/sessions/new", { db_path: path }, { signal: openAbort.signal });
       const sid = resp.session_id;
 
       const base = apiBase();

@@ -9,7 +9,7 @@ class Analisis:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
 
-    def create(self, info: Dict[str, Any]) -> int:
+    def create(self, info: Dict[str, Any], commit: bool = True) -> int:
         fecha = info.get("fecha_analisis")
         if not fecha:
             raise ValueError("fecha_analisis es obligatorio para crear un analisis.")
@@ -25,10 +25,11 @@ class Analisis:
             """,
             (fecha, numero_peticion, origen),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return int(cur.lastrowid)
 
-    def ensure(self, d: dict) -> int:
+    def ensure(self, d: dict, commit: bool = True) -> int:
         analisis_id = d.get("analisis_id")
         if analisis_id:
             return int(analisis_id)
@@ -56,7 +57,8 @@ class Analisis:
                     "UPDATE analisis SET origen = ? WHERE id = ?",
                     (origen, existing_id),
                 )
-                self.conn.commit()
+                if commit:
+                    self.conn.commit()
 
             return existing_id
 
@@ -65,7 +67,8 @@ class Analisis:
             "INSERT INTO analisis (fecha_analisis, numero_peticion, origen) VALUES (?, ?, ?)",
             (fecha, num, origen),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return int(cur.lastrowid)
 
     def list(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
