@@ -1,15 +1,4 @@
 pypdf>=4.0.0
-pytest>=9.0.0
-matplotlib
-tksheet
-coverage
-pytest-cov
 fastapi>=0.115
 uvicorn[standard]>=0.30
 python-multipart
-
-
-
-
-
-
