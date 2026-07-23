@@ -3,7 +3,7 @@
 
 from typing import Any
 
-SCHEMA_VERSION: int = 3
+CURRENT_SCHEMA_VERSION: int = 4
 
 SCHEMA_SQL: str = """
 -- ================== ANALISIS (DOCUMENTO) ===================
@@ -168,4 +168,12 @@ CREATE INDEX IF NOT EXISTS idx_param_limit_key ON param_limit(param_key);
 
 
 def create_schema(cursor: Any) -> None:
-    cursor.executescript(SCHEMA_SQL)
+    for statement in SCHEMA_STATEMENTS:
+        cursor.execute(statement)
+
+
+SCHEMA_STATEMENTS: tuple[str, ...] = tuple(
+    statement.strip()
+    for statement in SCHEMA_SQL.split(";")
+    if statement.strip()
+)

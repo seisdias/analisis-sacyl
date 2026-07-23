@@ -13,6 +13,15 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from api.deps import sessions
 from api.models import OpenSessionRequest, OpenSessionResponse, NewSessionRequest
 from db import AnalysisDB
+from db.schema_migrations import (
+    FutureSchemaError,
+    SchemaBackupError,
+    SchemaError,
+    SchemaIntegrityError,
+    SchemaMigrationError,
+    UnsupportedSchemaError,
+    prepare_database,
+)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -28,6 +37,20 @@ def _best_effort_unlink(path: Path | None) -> None:
         path.unlink(missing_ok=True)
     except OSError:
         pass
+
+
+def _schema_http_detail(error: SchemaError) -> str:
+    if isinstance(error, FutureSchemaError):
+        return "La base usa una versión SQLite futura no soportada"
+    if isinstance(error, UnsupportedSchemaError):
+        return str(error)
+    if isinstance(error, SchemaIntegrityError):
+        return "La base SQLite está corrupta o es incoherente"
+    if isinstance(error, SchemaBackupError):
+        return "No se pudo crear o verificar el backup de seguridad"
+    if isinstance(error, SchemaMigrationError):
+        return "No se pudo completar la migración SQLite"
+    return "No se pudo validar el esquema SQLite"
 
 
 def _validate_sqlite_file(path: Path, *, validate_extension: bool = True) -> Path:
@@ -48,12 +71,15 @@ def _validate_sqlite_file(path: Path, *, validate_extension: bool = True) -> Pat
 def sessions_open(req: OpenSessionRequest):
     try:
         path = _validate_sqlite_file(Path(req.db_path))
+        prepare_database(path)
         info = sessions.open_existing(str(path))
         return OpenSessionResponse(session_id=info.session_id, db_path=info.db_path)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="DB no encontrada")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except SchemaError as e:
+        raise HTTPException(status_code=400, detail=_schema_http_detail(e))
 
 
 @router.post("/new", response_model=OpenSessionResponse)
@@ -82,7 +108,7 @@ def sessions_new(req: NewSessionRequest):
         temp_path = Path(raw_temp_path)
 
         db = AnalysisDB(str(temp_path))
-        db.open()
+        db.create()
         db.close()
         db = None
 
@@ -92,8 +118,8 @@ def sessions_new(req: NewSessionRequest):
         info = sessions.register(str(p))
         return OpenSessionResponse(session_id=info.session_id, db_path=info.db_path)
 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"No se pudo crear la BD: {e}")
+    except Exception:
+        raise HTTPException(status_code=400, detail="No se pudo crear la BD")
     finally:
         if db is not None:
             try:
@@ -143,12 +169,15 @@ def sessions_upload(db_file: UploadFile = File(...)):
         os.replace(temp_path, dest)
         temp_path = None
 
+        prepare_database(dest)
         info = sessions.open_existing(str(dest))
         return OpenSessionResponse(session_id=info.session_id, db_path=info.db_path)
     except Exception as e:
         _best_effort_unlink(dest)
         if isinstance(e, ValueError):
             raise HTTPException(status_code=400, detail=str(e))
+        if isinstance(e, SchemaError):
+            raise HTTPException(status_code=400, detail=_schema_http_detail(e))
         raise HTTPException(status_code=400, detail="No se pudo cargar la BD")
     finally:
         _best_effort_unlink(temp_path)
@@ -156,5 +185,3 @@ def sessions_upload(db_file: UploadFile = File(...)):
             db_file.file.close()
         except Exception:
             pass
-
-

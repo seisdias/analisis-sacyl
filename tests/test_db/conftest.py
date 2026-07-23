@@ -66,7 +66,7 @@ def analysis_db(tmp_path):
     """
     db_path = os.path.join(tmp_path, "test_analisis.db")
     db = AnalysisDB(db_path=db_path)
-    db.open()
+    db.create()
     try:
         yield db
     finally:

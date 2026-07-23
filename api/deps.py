@@ -46,8 +46,8 @@ def get_db(
     """Dependency: abre DB y la cierra siempre al terminar el request."""
     db_path = resolve_db_path(request, session_id)
     db = AnalysisDB(db_path)
-    db.open()
     try:
+        db.open()
         yield db
     finally:
         try:

@@ -64,7 +64,7 @@ def test_api_histograms_dates_returns_dates(tmp_path: Path):
 
     # Crear DB + schema
     db = AnalysisDB(str(db_path))
-    db.open()
+    db.create()
     try:
         conn = db.conn
         assert conn is not None

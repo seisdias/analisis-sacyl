@@ -7,16 +7,50 @@ from fastapi.testclient import TestClient
 from api.routers import sessions as sessions_router
 from api.server import app
 from db import AnalysisDB
+from db import db_schema
+from db import schema_migrations as migration_module
 
 
 def _create_db(path: Path, marker: str | None = None) -> None:
     db = AnalysisDB(str(path))
-    db.open()
+    db.create()
     if marker is not None:
-        db.conn.execute("CREATE TABLE original_marker(value TEXT)")
-        db.conn.execute("INSERT INTO original_marker VALUES (?)", (marker,))
+        db.conn.execute("INSERT INTO app_config(key, value) VALUES ('marker', ?)", (marker,))
         db.conn.commit()
     db.close()
+
+
+@pytest.mark.parametrize(
+    ("error", "detail"),
+    [
+        (
+            migration_module.FutureSchemaError("private path"),
+            "La base usa una versión SQLite futura no soportada",
+        ),
+        (
+            migration_module.UnsupportedSchemaError("Esquema no soportado"),
+            "Esquema no soportado",
+        ),
+        (
+            migration_module.SchemaIntegrityError("private path"),
+            "La base SQLite está corrupta o es incoherente",
+        ),
+        (
+            migration_module.SchemaBackupError("private path"),
+            "No se pudo crear o verificar el backup de seguridad",
+        ),
+        (
+            migration_module.SchemaMigrationError("private path"),
+            "No se pudo completar la migración SQLite",
+        ),
+        (
+            migration_module.SchemaError("private path"),
+            "No se pudo validar el esquema SQLite",
+        ),
+    ],
+)
+def test_schema_http_errors_do_not_expose_internal_details(error, detail):
+    assert sessions_router._schema_http_detail(error) == detail
 
 
 def test_session_upload_traversal_is_internal_and_same_names_do_not_collide(tmp_path, monkeypatch):
@@ -39,9 +73,9 @@ def test_session_upload_traversal_is_internal_and_same_names_do_not_collide(tmp_
     assert path_one != path_two
     assert not (tmp_path / "same.db").exists()
     with sqlite3.connect(path_one) as conn:
-        assert conn.execute("SELECT value FROM original_marker").fetchone()[0] == "one"
+        assert conn.execute("SELECT value FROM app_config WHERE key='marker'").fetchone()[0] == "one"
     with sqlite3.connect(path_two) as conn:
-        assert conn.execute("SELECT value FROM original_marker").fetchone()[0] == "two"
+        assert conn.execute("SELECT value FROM app_config WHERE key='marker'").fetchone()[0] == "two"
 
 
 def test_session_upload_rejects_non_sqlite_and_cleans_it(tmp_path, monkeypatch):
@@ -106,7 +140,7 @@ def test_session_new_conflict_preserves_existing_database(tmp_path):
     )
     assert response.status_code == 409
     with sqlite3.connect(target) as conn:
-        assert conn.execute("SELECT value FROM original_marker").fetchone()[0] == "keep"
+        assert conn.execute("SELECT value FROM app_config WHERE key='marker'").fetchone()[0] == "keep"
 
 
 def test_session_new_failed_overwrite_preserves_original_and_cleans_temp(tmp_path, monkeypatch):
@@ -118,7 +152,7 @@ def test_session_new_failed_overwrite_preserves_original_and_cleans_temp(tmp_pat
         def __init__(self, _path):
             pass
 
-        def open(self):
+        def create(self):
             raise RuntimeError("schema failure")
 
         def close(self):
@@ -144,8 +178,8 @@ def test_session_new_successful_overwrite_replaces_initialized_database(tmp_path
     assert response.status_code == 200
     with sqlite3.connect(target) as conn:
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    assert "analisis" in tables
-    assert "original_marker" not in tables
+        assert "analisis" in tables
+        assert conn.execute("SELECT COUNT(*) FROM app_config").fetchone()[0] == 0
     assert sorted(tmp_path.iterdir()) == [target]
 
 
@@ -177,3 +211,108 @@ def test_session_new_closes_database_before_atomic_replace(tmp_path, monkeypatch
 
     assert response.status_code == 200
     assert target.is_file()
+
+
+def test_session_new_creates_formal_version_4(tmp_path):
+    target = tmp_path / "formal.db"
+    response = TestClient(app).post("/sessions/new", json={"db_path": str(target)})
+    assert response.status_code == 200
+    with sqlite3.connect(target) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 4
+
+
+def test_session_open_rejects_foreign_sqlite_without_registering(tmp_path):
+    target = tmp_path / "foreign.db"
+    with sqlite3.connect(target) as conn:
+        conn.execute("CREATE TABLE foreign_data(value TEXT)")
+    before = len(sessions_router.sessions._sessions)
+    response = TestClient(app).post("/sessions/open", json={"db_path": str(target)})
+    assert response.status_code == 400
+    assert len(sessions_router.sessions._sessions) == before
+    assert not (tmp_path / "backups").exists()
+
+
+def test_session_open_adopts_exact_unversioned_schema_before_registering(tmp_path):
+    target = tmp_path / "unversioned.db"
+    with sqlite3.connect(target) as conn:
+        db_schema.create_schema(conn.cursor())
+        conn.commit()
+    response = TestClient(app).post("/sessions/open", json={"db_path": str(target)})
+    assert response.status_code == 200
+    with sqlite3.connect(target) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 4
+    assert len(list((tmp_path / "backups").glob("*.sqlite3"))) == 1
+
+
+def test_session_upload_rejects_foreign_sqlite_and_removes_final_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    source = tmp_path / "foreign-source.db"
+    with sqlite3.connect(source) as conn:
+        conn.execute("CREATE TABLE foreign_data(value TEXT)")
+    before = len(sessions_router.sessions._sessions)
+    with source.open("rb") as uploaded:
+        response = TestClient(app).post(
+            "/sessions/upload",
+            files={"db_file": ("foreign.db", uploaded, "application/octet-stream")},
+        )
+    assert response.status_code == 400
+    assert len(sessions_router.sessions._sessions) == before
+    assert list((tmp_path / "data/uploads").iterdir()) == []
+
+
+def test_session_upload_migration_failure_removes_database_but_keeps_backup(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    source = tmp_path / "unversioned-source.db"
+    with sqlite3.connect(source) as conn:
+        db_schema.create_schema(conn.cursor())
+        conn.commit()
+    real_verify = migration_module._verify_canonical
+
+    def fail_after_version(conn, expected_version):
+        real_verify(conn, expected_version)
+        raise RuntimeError("injected migration failure")
+
+    monkeypatch.setattr(migration_module, "_verify_canonical", fail_after_version)
+    with source.open("rb") as uploaded:
+        response = TestClient(app).post(
+            "/sessions/upload",
+            files={"db_file": ("unversioned.db", uploaded, "application/octet-stream")},
+        )
+    assert response.status_code == 400
+    assert str(tmp_path) not in response.json()["detail"]
+    assert "backups" not in response.json()["detail"]
+    upload_dir = tmp_path / "data/uploads"
+    assert [path for path in upload_dir.iterdir() if path.name != "backups"] == []
+    backups = list((upload_dir / "backups").glob("*.sqlite3"))
+    assert len(backups) == 1
+    with sqlite3.connect(backups[0]) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 0
+
+
+def test_upload_registration_failure_after_adoption_keeps_backup_only(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    source = tmp_path / "adoptable.db"
+    with sqlite3.connect(source) as conn:
+        db_schema.create_schema(conn.cursor())
+        conn.commit()
+    monkeypatch.setattr(
+        sessions_router.sessions,
+        "open_existing",
+        lambda _path: (_ for _ in ()).throw(RuntimeError("registration failed")),
+    )
+    with source.open("rb") as uploaded:
+        response = TestClient(app).post(
+            "/sessions/upload",
+            files={"db_file": ("adoptable.db", uploaded, "application/octet-stream")},
+        )
+    assert response.status_code == 400
+    upload_dir = tmp_path / "data/uploads"
+    assert [path for path in upload_dir.iterdir() if path.name != "backups"] == []
+    backups = list((upload_dir / "backups").glob("*.sqlite3"))
+    assert len(backups) == 1
+    with sqlite3.connect(backups[0]) as conn:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 0

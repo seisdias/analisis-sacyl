@@ -43,7 +43,7 @@ def import_api(tmp_path, monkeypatch):
     upload_dir = tmp_path / "controlled-uploads"
     upload_dir.mkdir()
     db = AnalysisDB(str(tmp_path / "import.db"))
-    db.open()
+    db.create()
     db.close()
     info = sessions.register(str(tmp_path / "import.db"))
     monkeypatch.setattr(imports_router, "uploads_dir", lambda: upload_dir)
@@ -237,7 +237,7 @@ def test_from_paths_error_does_not_expose_absolute_source_path(import_api, monke
 )
 def test_component_failure_rolls_back_entire_pdf(tmp_path, monkeypatch, component, method):
     db = AnalysisDB(str(tmp_path / "atomic.db"))
-    db.open()
+    db.create()
     db.save_patient({"nombre": "Original", "numero_historia": "OLD"})
     monkeypatch.setattr(imports_router, "parse_hematology_pdf", lambda _path: _parsed_data())
     monkeypatch.setattr(db, method, lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError(component)))
@@ -253,7 +253,7 @@ def test_component_failure_rolls_back_entire_pdf(tmp_path, monkeypatch, componen
 
 def test_missing_request_number_does_not_modify_database(tmp_path, monkeypatch):
     db = AnalysisDB(str(tmp_path / "missing-request.db"))
-    db.open()
+    db.create()
     db.save_patient({"nombre": "Original"})
     monkeypatch.setattr(imports_router, "parse_hematology_pdf", lambda _path: _parsed_data(None))
 
@@ -267,7 +267,7 @@ def test_missing_request_number_does_not_modify_database(tmp_path, monkeypatch):
 
 def test_empty_component_values_are_rejected_before_begin(tmp_path, monkeypatch):
     db = AnalysisDB(str(tmp_path / "empty-component.db"))
-    db.open()
+    db.create()
     data = {
         "paciente": {"nombre": "No debe guardarse"},
         "hematologia": [{
@@ -290,7 +290,7 @@ def test_empty_component_values_are_rejected_before_begin(tmp_path, monkeypatch)
 
 def test_empty_patient_does_not_replace_existing_patient(tmp_path, monkeypatch):
     db = AnalysisDB(str(tmp_path / "empty-patient.db"))
-    db.open()
+    db.create()
     db.save_patient({"nombre": "Original", "numero_historia": "OLD"})
     data = _parsed_data()
     data["paciente"] = {"nombre": " ", "numero_historia": None}
@@ -304,7 +304,7 @@ def test_empty_patient_does_not_replace_existing_patient(tmp_path, monkeypatch):
 
 def test_rollback_failure_does_not_hide_original_import_error(tmp_path, monkeypatch):
     db = AnalysisDB(str(tmp_path / "rollback-error.db"))
-    db.open()
+    db.create()
     real_conn = db.conn
 
     class RollbackFailingConnection:
@@ -333,7 +333,7 @@ def test_rollback_failure_does_not_hide_original_import_error(tmp_path, monkeypa
 
 def test_valid_import_and_reimport_keep_upsert_behavior(tmp_path, monkeypatch):
     db = AnalysisDB(str(tmp_path / "valid.db"))
-    db.open()
+    db.create()
     data = _parsed_data()
     monkeypatch.setattr(imports_router, "parse_hematology_pdf", lambda _path: data)
     imports_router._import_pdf_into_db("unused.pdf", db)
@@ -348,15 +348,20 @@ def test_valid_import_and_reimport_keep_upsert_behavior(tmp_path, monkeypatch):
 
 
 def test_close_is_idempotent_after_partial_open_failure(tmp_path, monkeypatch):
-    db = AnalysisDB(str(tmp_path / "partial-open.db"))
+    path = tmp_path / "partial-open.db"
+    seed = AnalysisDB(str(path))
+    seed.create()
+    seed.close()
+    db = AnalysisDB(str(path))
     monkeypatch.setattr(
-        db, "_create_tables", lambda: (_ for _ in ()).throw(RuntimeError("open failure"))
+        "db.db_manager.prepare_database",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("open failure")),
     )
 
     with pytest.raises(RuntimeError, match="open failure"):
         db.open()
 
-    assert db.conn is not None
+    assert db.conn is None
     assert not db.is_open
     db.close()
     db.close()

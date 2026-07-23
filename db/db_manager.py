@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Dict, Any, Optional
 
-from . import db_schema
 from .analisis import Analisis
 from .config import Config
 from .ingreso import Ingreso
@@ -15,6 +15,7 @@ from .bioquimica import Bioquimica
 from .gasometria import Gasometria
 from .orina import Orina
 from .tratamiento import Tratamiento
+from .schema_migrations import create_database, prepare_database, sqlite_rw_uri
 
 DB_FILE = "analisis.db"
 
@@ -55,14 +56,28 @@ class AnalysisDB:
     def open(self) -> None:
         if self.is_open:
             return
+        db_path = Path(self.db_path)
+        if not db_path.is_file():
+            raise FileNotFoundError(f"La base de datos no existe: {db_path}")
+        try:
+            prepare_database(db_path, check_integrity=False)
+            self.conn = sqlite3.connect(
+                sqlite_rw_uri(db_path.resolve()), uri=True, check_same_thread=False
+            )
+            self.conn.row_factory = sqlite3.Row
+            self.conn.execute("PRAGMA foreign_keys = ON")
+            self._init_components()
+            self.is_open = True
+        except Exception:
+            self.close()
+            raise
 
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA foreign_keys = ON")
-
-        self._create_tables()
-        self._init_components()
-        self.is_open = True
+    def create(self) -> None:
+        """Initialise a reserved empty file as a formally versioned database."""
+        if self.is_open:
+            raise RuntimeError("La base de datos ya está abierta")
+        create_database(self.db_path)
+        self.open()
 
     def close(self) -> None:
         if self.conn:
@@ -70,14 +85,6 @@ class AnalysisDB:
 
         self.conn = None
         self.is_open = False
-
-    # --------------------
-    #   INIT
-    # --------------------
-    def _create_tables(self) -> None:
-        cur = self.conn.cursor()
-        db_schema.create_schema(cur)
-        self.conn.commit()
 
     def _init_components(self) -> None:
         self.analisis = Analisis(self.conn)
@@ -135,10 +142,6 @@ class AnalysisDB:
 
     def list_orina(self, limit=None):
         return self.orina.list(limit)
-
-
-
-
 
 
 

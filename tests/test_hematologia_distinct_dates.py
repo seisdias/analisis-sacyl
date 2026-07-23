@@ -84,7 +84,7 @@ def test_hematologia_list_distinct_dates_desc_unique(tmp_path: Path, dates_in, e
     db_path = tmp_path / "test.db"
 
     db = AnalysisDB(str(db_path))
-    db.open()
+    db.create()
     try:
         conn = db.conn
         assert conn is not None
