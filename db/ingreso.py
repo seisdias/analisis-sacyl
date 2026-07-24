@@ -26,17 +26,18 @@ class Ingreso:
         self.conn.commit()
         return int(cur.lastrowid)
 
-    def update_hospital_stay(self, stay_id: int, d: Dict[str, Any]) -> None:
+    def update_hospital_stay(self, stay_id: int, d: Dict[str, Any]) -> bool:
         cur = self.conn.cursor()
         cur.execute(
             "UPDATE hospital_stay SET admission_date=?, discharge_date=?, notes=? WHERE id=?",
             (d.get("admission_date"), d.get("discharge_date"), d.get("notes"), stay_id),
         )
         self.conn.commit()
+        return cur.rowcount > 0
 
-    def delete_hospital_stay(self, stay_id: int) -> None:
+    def delete_hospital_stay(self, stay_id: int) -> bool:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM hospital_stay WHERE id=?", (stay_id,))
         self.conn.commit()
-
+        return cur.rowcount > 0
 

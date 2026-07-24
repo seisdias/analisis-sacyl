@@ -45,9 +45,26 @@ def get_db(
 ) -> Generator[AnalysisDB, None, None]:
     """Dependency: abre DB y la cierra siempre al terminar el request."""
     db_path = resolve_db_path(request, session_id)
+    if session_id and (
+        not os.path.isfile(db_path)
+        or not os.access(db_path, os.R_OK | os.W_OK)
+    ):
+        raise HTTPException(
+            status_code=410,
+            detail="La base de datos de la sesión ya no está disponible",
+        )
+
     db = AnalysisDB(db_path)
     try:
-        db.open()
+        try:
+            db.open()
+        except (FileNotFoundError, PermissionError):
+            if session_id:
+                raise HTTPException(
+                    status_code=410,
+                    detail="La base de datos de la sesión ya no está disponible",
+                )
+            raise
         yield db
     finally:
         try:

@@ -93,15 +93,22 @@ def ranges_defaults() -> Dict[str, Any]:
 
 class BulkRangeUpdate(BaseModel):
     # { "leucocitos": {"min": 4.0, "max": 11.0}, ... }
-    ranges: Dict[str, Dict[str, Optional[float]]]
+    ranges: Dict[str, RangeUpdate]
 
 
 @router.post("/ranges/bulk")
 def update_ranges_bulk(body: BulkRangeUpdate) -> Dict[str, Any]:
     with _RM_LOCK:
+        known_keys = _RM.get_all()
+        if any(key not in known_keys for key in body.ranges):
+            raise HTTPException(
+                status_code=400,
+                detail="El rango contiene un parámetro desconocido",
+            )
+
         for key, v in body.ranges.items():
             # min/max pueden venir como null
-            _RM.update_range(key, v.get("min"), v.get("max"))
+            _RM.update_range(key, v.min, v.max)
         return {"ok": True, "ranges": _ranges_to_payload(_RM)}
 
 
@@ -213,9 +220,6 @@ def histogram_proxy(
             "raw": h,
             **payload,
         }
-
-
-
 
 
 
