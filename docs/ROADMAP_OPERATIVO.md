@@ -2,18 +2,23 @@
 
 ## Propósito
 
-Mantener una referencia breve y persistente del estado técnico, las decisiones vigentes y el siguiente punto de consolidación del proyecto.
+Mantener una referencia persistente del cierre de la consolidación y del flujo de trabajo acordado para las siguientes etapas.
 
-## Contexto activo
+## Estado canónico
 
-- Repositorio: `seisdias/analisis-sacyl`
-- Carpeta activa: `/Volumes/SamsungEVO/ws/analisis-sacyl-import-safety`
-- Base técnica consolidada: `6bd0bad`
-- Rama actual: `chore/final-consolidation`
+- Repositorio: `seisdias/analisis-sacyl`.
+- PR #27 integrada mediante **Squash and merge**.
+- `main` es la fuente canónica estable y `dev` está sincronizada con ella.
+- `6a8b2d5` es el commit squash de consolidación técnica creado por la PR #27 y el punto de partida de este cierre documental.
+- `main` y `dev` estaban sincronizadas en `6a8b2d5` antes de crear `docs/final-roadmap-closure`; después de integrar el cierre volverán a sincronizarse en el nuevo commit de `main`.
+- `docs/final-roadmap-closure` es una rama temporal dedicada exclusivamente a este cierre y será eliminada tras integrarse.
 
-## Fuente de verdad
+## Estructura local final
 
-La fuente de verdad es, por este orden práctico, el código versionado en Git, el grafo y los commits identificados, las pruebas automatizadas y la ejecución comprobada en cada plataforma. Este documento resume ese estado; no sustituye esas evidencias.
+- La ruta local canónica será `/Volumes/SamsungEVO/ws/analisis-sacyl`.
+- `/Volumes/SamsungEVO/ws/analisis-sacyl-import-safety` fue un worktree temporal de consolidación y se eliminará después de integrar este cierre documental.
+- `main` y `dev` no necesitan carpetas locales separadas: normalmente se alternará entre ellas en la carpeta original mediante `git switch`.
+- Solo se crearán worktrees adicionales, de forma temporal, cuando sea necesario trabajar simultáneamente en varias ramas.
 
 ## Estado de los pasos
 
@@ -27,55 +32,67 @@ La fuente de verdad es, por este orden práctico, el código versionado en Git, 
 | 6 | Seguridad y migraciones SQLite | Completado | 100 % |
 | 7 | API e integración | Completado | 100 % |
 | 8 | Entorno, dependencias y build | Completado | 100 % |
-| 9 | Consolidación final | En curso | 20 % |
+| 9 | Consolidación final | Completado | 100 % |
 
 ## Paso 9 — Consolidación final
 
 - **9.1 Ingesta de ramas y commits:** completado.
 - **9.2 Roadmap operativo:** completado.
-- **9.3 Reconciliación documental:** en curso.
-- **9.4 Integración:** pendiente.
-- **9.5 Adaptaciones mínimas:** pendiente.
-- **9.6 Verificación completa:** pendiente.
-- **9.7 Auditoría e informe de cierre:** pendiente.
+- **9.3 Reconciliación documental:** completado.
+- **9.4 Integración:** completado.
+- **9.5 Adaptaciones mínimas:** completado.
+- **9.6 Verificación completa:** completado.
+- **9.7 Auditoría e informe de cierre:** completado.
 
-## Cadena técnica integrada
+## Validación final
 
-1. `main`: `6b116d7`
-2. `chore/test-baseline`: `5052be6`
-3. `fix/import-safety`: `a70bf1e`
-4. `fix/sqlite-safety`: `c426e38`
-5. `test/api-integration`: `40cea02`
-6. `chore/environment-build`: `82551c8` → `6bd0bad`
+Validación local:
 
-La documentación pendiente de reconciliar permanece separada en `docs/codex-baseline`, commit `25ac74e`.
-
-## Validaciones cerradas
-
-Pruebas locales:
-
-- 223 recogidas, 221 aprobadas, 2 omitidas y 0 fallos.
+- 226 pruebas recogidas, 224 aprobadas, 2 omitidas y 0 fallos.
 - Cobertura total: 92 %.
+- `git diff --check`: correcto.
 
-Windows:
+PR #27:
 
-- Workflow: `Build Windows`.
-- Run: `30759025520`, commit `6bd0bad`, resultado `success`.
-- Instalación limpia, pruebas focalizadas, build PyInstaller, smoke test e inspección de contenido prohibido: correctos.
-- Artefacto: `AnalisisSACYL-windows`.
-- Tamaño: 24.191.505 bytes.
-- SHA-256: `a9cef2f7307a9c356d1d2a28461b28ab315e22d7a61a9ef76e79fa6e5cbb6b7e`.
+- Head final anterior al squash: `68a6497`.
+- Checks de tests y build: `success`.
+- Comentarios P1 y P2 corregidos y resueltos.
 
-## Decisiones vigentes
+Privacidad:
 
-- No integrar `feature/export_analytics`.
-- No integrar `feature/mac-os-tahoe`.
-- No crear PR ni fusionar sin autorización expresa.
-- No acceder ni añadir datos clínicos reales.
-- Mantener SQLite y PDFs reales fuera del repositorio.
+- PDFs temporales creados con `0600` desde el primer instante en POSIX.
+- Backups SQLite creados con `0600` y directorio `backups/` protegido con `0700`.
+- Pruebas de regresión ejecutadas bajo `umask 022`.
+- Compatibilidad funcional mantenida en Windows.
 
-## Punto actual y siguiente acción
+Validación Windows previa:
 
-Punto exacto actual: cadena técnica integrada y validada en `6bd0bad`; ingesta 9.1 y roadmap 9.2 completados, con la reconciliación documental 9.3 en curso sobre `chore/final-consolidation`.
+- Workflow `Build Windows`, run `30759025520`, commit técnico `6bd0bad`.
+- Build, pruebas, smoke test e inspección de contenido prohibido: correctos.
+- Artefacto validado: `AnalisisSACYL-windows`.
 
-Siguiente acción prevista: reconciliar `docs/codex-baseline` con el estado técnico final.
+## Ramas
+
+Las ramas históricas y temporales de consolidación fueron eliminadas después de quedar absorbidas.
+
+`docs/final-roadmap-closure` es la última rama temporal del proceso y se eliminará después de integrar este documento.
+
+Ramas conservadas:
+
+- `main`;
+- `dev`;
+- `feature/export_analytics`, pendiente de auditoría e incorporación;
+- `feature/mac-os-tahoe`, con ajustes experimentales para Mac mini M1/macOS Tahoe, no integrada y fuera de este cierre.
+
+## Flujo futuro
+
+1. `main` permanece estable y protegida.
+2. `dev` se mantiene sincronizada con `main` cuando no existe una integración pendiente.
+3. Las nuevas ramas `feature/*` nacen desde `dev`.
+4. Las PR se integran en `main` mediante **Squash and merge**.
+5. Después de cada merge, `dev` avanza hasta `main`.
+6. Las ramas temporales se eliminan una vez verificadas.
+
+## Cierre
+
+Los pasos 1–9 están completados al 100 %. El trabajo posterior comienza como alcance nuevo desde `dev`; no reabre esta consolidación.
