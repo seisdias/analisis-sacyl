@@ -32,8 +32,8 @@ La fuente de verdad es, por este orden práctico, el código versionado en Git, 
 ## Paso 9 — Consolidación final
 
 - **9.1 Ingesta de ramas y commits:** completado.
-- **9.2 Roadmap operativo:** en curso.
-- **9.3 Reconciliación documental:** pendiente.
+- **9.2 Roadmap operativo:** completado.
+- **9.3 Reconciliación documental:** en curso.
 - **9.4 Integración:** pendiente.
 - **9.5 Adaptaciones mínimas:** pendiente.
 - **9.6 Verificación completa:** pendiente.
@@ -76,6 +76,6 @@ Windows:
 
 ## Punto actual y siguiente acción
 
-Punto exacto actual: cadena técnica integrada y validada en `6bd0bad`; ingesta 9.1 completada y elaboración del roadmap 9.2 en curso sobre `chore/final-consolidation`.
+Punto exacto actual: cadena técnica integrada y validada en `6bd0bad`; ingesta 9.1 y roadmap 9.2 completados, con la reconciliación documental 9.3 en curso sobre `chore/final-consolidation`.
 
 Siguiente acción prevista: reconciliar `docs/codex-baseline` con el estado técnico final.
