@@ -42,6 +42,12 @@ def test_echarts_is_local_versioned_and_verified():
     assert hashlib.sha256(asset_bytes).hexdigest() == documented
 
 
+def test_echarts_asset_is_exempt_from_git_text_normalization():
+    attributes = _text(".gitattributes").splitlines()
+    assert "web/assets/vendor/echarts-5.6.0.min.js -text" in attributes
+    assert not any(line.startswith("web/") for line in attributes if "echarts-5.6.0.min.js" not in line)
+
+
 def test_pyinstaller_spec_is_onedir_and_scoped():
     spec = _text("AnalisisSACYL.spec")
     assert 'ROOT / "app" / "web_main.py"' in spec

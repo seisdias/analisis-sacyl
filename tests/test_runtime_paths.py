@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 from app import paths
 
 
+def _special_directory_name(prefix: str) -> str:
+    common = f"{prefix} con espacios # ñ"
+    return f"{common} ?" if os.name == "posix" else common
+
+
 def test_primary_data_environment_has_priority(tmp_path, monkeypatch):
-    primary = tmp_path / "principal con espacios # ? ñ"
+    primary = tmp_path / _special_directory_name("principal")
     monkeypatch.setenv("ANALISIS_SACYL_DATA_DIR", str(primary))
     monkeypatch.setenv("SALUD_V1_DATA_DIR", str(tmp_path / "alias"))
     assert paths.data_root() == primary.resolve()
@@ -46,7 +52,7 @@ def test_frozen_resources_are_not_a_data_destination(tmp_path, monkeypatch):
 
 
 def test_runtime_directories_are_separate_and_created_lazily(tmp_path, monkeypatch):
-    root = tmp_path / "datos con espacios ñ # ?"
+    root = tmp_path / _special_directory_name("datos")
     monkeypatch.setenv("ANALISIS_SACYL_DATA_DIR", str(root))
     assert not root.exists()
     pdfs = paths.pdf_uploads_dir()
