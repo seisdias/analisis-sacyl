@@ -32,17 +32,18 @@ class LimiteParametro:
         self.conn.commit()
         return int(cur.lastrowid)
 
-    def update_param_limit(self, limit_id: int, d: Dict[str, Any]) -> None:
+    def update_param_limit(self, limit_id: int, d: Dict[str, Any]) -> bool:
         cur = self.conn.cursor()
         cur.execute(
             "UPDATE param_limit SET param_key=?, value=?, label=?, enabled=? WHERE id=?",
             (d["param_key"], d["value"], d.get("label"), int(d.get("enabled", 1)), limit_id),
         )
         self.conn.commit()
+        return cur.rowcount > 0
 
-    def delete_param_limit(self, limit_id: int) -> None:
+    def delete_param_limit(self, limit_id: int) -> bool:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM param_limit WHERE id=?", (limit_id,))
         self.conn.commit()
-
+        return cur.rowcount > 0
 

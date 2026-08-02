@@ -1,32 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Ir a la raíz del proyecto (directorio donde está este script)
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-# Permite sobreescribir el intérprete (por ejemplo PYTHON=python3 ./run_all_tests.sh)
-PYTHON="${PYTHON:-python}"
+if [[ -n "${PYTHON:-}" ]]; then
+  PYTHON_BIN="$PYTHON"
+elif [[ -n "${VIRTUAL_ENV:-}" && -x "$VIRTUAL_ENV/bin/python" ]]; then
+  PYTHON_BIN="$VIRTUAL_ENV/bin/python"
+elif [[ -x "$ROOT_DIR/.venv/bin/python" ]]; then
+  PYTHON_BIN="$ROOT_DIR/.venv/bin/python"
+else
+  PYTHON_BIN="python3"
+fi
 
-echo "==> Usando intérprete: $PYTHON"
+echo "==> Usando intérprete: $PYTHON_BIN"
+echo "==> Ejecutando suite activa con cobertura"
 
-echo "==> Limpiando datos de cobertura anteriores..."
-$PYTHON -m coverage erase || true
+COVERAGE_TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/analisis-sacyl-coverage.XXXXXX")"
+trap 'rm -rf -- "$COVERAGE_TMP_DIR"' EXIT
 
-echo "==> Ejecutando tests con pytest + pytest-cov..."
-$PYTHON -m pytest tests \
-  --cov=db_manager \
-  --cov=lab_pdf \
-  --cov=analisis_view \
-  --cov=ranges \
-  --cov=ranges_config \
-  --cov=charts \
+export COVERAGE_FILE="$COVERAGE_TMP_DIR/.coverage"
+export PYTHONDONTWRITEBYTECODE=1
+
+"$PYTHON_BIN" -m pytest \
+  -p no:cacheprovider \
+  --cov-config=.coveragerc \
+  --cov \
   --cov-report=term-missing \
-  --cov-fail-under=80
-
-echo "==> Generando informe HTML de cobertura..."
-$PYTHON -m coverage html
-
-echo
-echo "✅ Tests OK y cobertura suficiente."
-echo "   Informe HTML disponible en: htmlcov/index.html"
+  "$@"

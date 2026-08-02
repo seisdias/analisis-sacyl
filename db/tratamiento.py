@@ -33,7 +33,7 @@ class Tratamiento:
         self.conn.commit()
         return int(cur.lastrowid)
 
-    def update_treatment(self, treatment_id: int, d: Dict[str, Any]) -> None:
+    def update_treatment(self, treatment_id: int, d: Dict[str, Any]) -> bool:
         cur = self.conn.cursor()
         cur.execute(
             "UPDATE treatment_course SET name=?, start_date=?, end_date=?, standard_days=?, notes=? WHERE id=?",
@@ -47,11 +47,12 @@ class Tratamiento:
             ),
         )
         self.conn.commit()
+        return cur.rowcount > 0
 
-    def delete_treatment(self, treatment_id: int) -> None:
+    def delete_treatment(self, treatment_id: int) -> bool:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM treatment_course WHERE id=?", (treatment_id,))
         self.conn.commit()
-
+        return cur.rowcount > 0
 
 

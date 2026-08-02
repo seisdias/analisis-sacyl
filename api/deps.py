@@ -10,6 +10,7 @@ from fastapi import HTTPException, Query, Request
 
 from api.session_store import SessionStore
 from db import AnalysisDB
+from app.paths import data_root, pdf_uploads_dir
 
 
 # Singleton de sesiones para toda la app
@@ -45,9 +46,26 @@ def get_db(
 ) -> Generator[AnalysisDB, None, None]:
     """Dependency: abre DB y la cierra siempre al terminar el request."""
     db_path = resolve_db_path(request, session_id)
+    if session_id and (
+        not os.path.isfile(db_path)
+        or not os.access(db_path, os.R_OK | os.W_OK)
+    ):
+        raise HTTPException(
+            status_code=410,
+            detail="La base de datos de la sesión ya no está disponible",
+        )
+
     db = AnalysisDB(db_path)
-    db.open()
     try:
+        try:
+            db.open()
+        except (FileNotFoundError, PermissionError):
+            if session_id:
+                raise HTTPException(
+                    status_code=410,
+                    detail="La base de datos de la sesión ya no está disponible",
+                )
+            raise
         yield db
     finally:
         try:
@@ -57,14 +75,10 @@ def get_db(
 
 
 def data_dir() -> Path:
-    """Carpeta portable-friendly (SALUD_V1_DATA_DIR) o ~/.salud_v1."""
-    base = os.getenv("SALUD_V1_DATA_DIR")
-    if base:
-        return Path(base).expanduser().resolve()
-    return (Path.home() / ".salud_v1").resolve()
+    """Compatibility wrapper for the central writable data root."""
+    return data_root()
 
 
 def uploads_dir() -> Path:
-    d = data_dir() / "uploads"
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+    """Compatibility wrapper for temporary PDF uploads."""
+    return pdf_uploads_dir()
