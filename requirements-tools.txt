@@ -1,0 +1,2 @@
+# Optional auxiliary tools; not required at runtime or for packaging.
+reportlab>=4.2,<5

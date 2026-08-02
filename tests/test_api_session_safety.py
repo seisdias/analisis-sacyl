@@ -11,6 +11,11 @@ from db import db_schema
 from db import schema_migrations as migration_module
 
 
+@pytest.fixture(autouse=True)
+def isolated_runtime_data(tmp_path, monkeypatch):
+    monkeypatch.setenv("ANALISIS_SACYL_DATA_DIR", str(tmp_path / "runtime-data"))
+
+
 def _create_db(path: Path, marker: str | None = None) -> None:
     db = AnalysisDB(str(path))
     db.create()
@@ -69,7 +74,7 @@ def test_session_upload_traversal_is_internal_and_same_names_do_not_collide(tmp_
     assert response_one.status_code == response_two.status_code == 200
     path_one = Path(response_one.json()["db_path"])
     path_two = Path(response_two.json()["db_path"])
-    assert path_one.parent == path_two.parent == (tmp_path / "data/uploads").resolve()
+    assert path_one.parent == path_two.parent == (tmp_path / "runtime-data/uploads/databases").resolve()
     assert path_one != path_two
     assert not (tmp_path / "same.db").exists()
     with sqlite3.connect(path_one) as conn:
@@ -85,7 +90,7 @@ def test_session_upload_rejects_non_sqlite_and_cleans_it(tmp_path, monkeypatch):
         files={"db_file": ("fake.db", b"not sqlite", "application/octet-stream")},
     )
     assert response.status_code == 400
-    assert list((tmp_path / "data/uploads").iterdir()) == []
+    assert list((tmp_path / "runtime-data/uploads/databases").iterdir()) == []
 
 
 def test_session_upload_registration_failure_leaves_no_orphan(tmp_path, monkeypatch):
@@ -106,7 +111,7 @@ def test_session_upload_registration_failure_leaves_no_orphan(tmp_path, monkeypa
 
     assert response.status_code == 400
     assert response.json()["detail"] == "No se pudo cargar la BD"
-    assert list((tmp_path / "data/uploads").iterdir()) == []
+    assert list((tmp_path / "runtime-data/uploads/databases").iterdir()) == []
 
 
 @pytest.mark.parametrize("kind", ["directory", "non_sqlite", "bad_extension"])
@@ -257,7 +262,7 @@ def test_session_upload_rejects_foreign_sqlite_and_removes_final_file(tmp_path, 
         )
     assert response.status_code == 400
     assert len(sessions_router.sessions._sessions) == before
-    assert list((tmp_path / "data/uploads").iterdir()) == []
+    assert list((tmp_path / "runtime-data/uploads/databases").iterdir()) == []
 
 
 def test_session_upload_migration_failure_removes_database_but_keeps_backup(
@@ -283,7 +288,7 @@ def test_session_upload_migration_failure_removes_database_but_keeps_backup(
     assert response.status_code == 400
     assert str(tmp_path) not in response.json()["detail"]
     assert "backups" not in response.json()["detail"]
-    upload_dir = tmp_path / "data/uploads"
+    upload_dir = tmp_path / "runtime-data/uploads/databases"
     assert [path for path in upload_dir.iterdir() if path.name != "backups"] == []
     backups = list((upload_dir / "backups").glob("*.sqlite3"))
     assert len(backups) == 1
@@ -310,7 +315,7 @@ def test_upload_registration_failure_after_adoption_keeps_backup_only(
             files={"db_file": ("adoptable.db", uploaded, "application/octet-stream")},
         )
     assert response.status_code == 400
-    upload_dir = tmp_path / "data/uploads"
+    upload_dir = tmp_path / "runtime-data/uploads/databases"
     assert [path for path in upload_dir.iterdir() if path.name != "backups"] == []
     backups = list((upload_dir / "backups").glob("*.sqlite3"))
     assert len(backups) == 1

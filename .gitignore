@@ -1,31 +1,47 @@
-*.db
-*.log
-/build/
-__pycache__/
-._*
-.idea/
-*.pyc         # Ignora archivos .pyc sueltos
-.coverage
-.coveragerc
-/htmlcov/
-fix-authors.sh
-
-
-# Entorno virtual
+# Python
 .venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+htmlcov/
+.coverage
 
-# PyInstaller
+# Build outputs (AnalisisSACYL.spec remains versioned)
 build/
 dist/
-*.spec
 
-# Archivos temporales
-*.pyc
+# Local and clinical data
+*.db
+*.sqlite
+*.sqlite3
+*-wal
+*-shm
+backups/
+**/backups/
+data/
+app/data/
+uploads/
+**/uploads/
 
+# Logs and generated helper output
+*.log
+listado.txt
 
-.venv/, app/.venv/
+# OS and editors
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
 
-
-build/, dist/, htmlcov/
-
-app/data/uploads/*.db y *.db
+# Explicitly versioned exceptions
+!.coveragerc
+!AnalisisSACYL.spec
+!tests/data/
+!tests/data/*.pdf
+!web/assets/vendor/
+!web/assets/vendor/*

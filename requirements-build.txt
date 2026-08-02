@@ -1,0 +1,4 @@
+# Build profile. Install runtime and desktop profiles first:
+#   python -m pip install -r requirements.txt -r requirements-webview.txt -r requirements-build.txt
+pyinstaller>=6,<7
+pyinstaller-hooks-contrib>=2025.8,<2027

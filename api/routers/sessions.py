@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from api.deps import sessions
 from api.models import OpenSessionRequest, OpenSessionResponse, NewSessionRequest
 from db import AnalysisDB
+from app.paths import database_uploads_dir
 from db.schema_migrations import (
     FutureSchemaError,
     SchemaBackupError,
@@ -141,7 +142,7 @@ def sessions_close(session_id: str):
 def sessions_upload(db_file: UploadFile = File(...)):
     """
     Subida de un .db desde el navegador (fallback cuando no hay pywebview).
-    Guarda el fichero en ./data/uploads y abre sesión.
+    Guarda el fichero en el área de uploads de runtime y abre sesión.
     """
     if not db_file.filename:
         raise HTTPException(status_code=400, detail="Fichero inválido")
@@ -150,8 +151,7 @@ def sessions_upload(db_file: UploadFile = File(...)):
     if suffix not in SQLITE_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Extensión no válida")
 
-    upload_dir = Path("data/uploads")
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    upload_dir = database_uploads_dir()
 
     temp_path: Path | None = None
     dest: Path | None = None

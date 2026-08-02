@@ -50,7 +50,7 @@ def test_real_pdf_upload_populates_dashboard_and_all_histogram_proxies(
     assert snapshot["leucocytes"] == [{"date": "2025-06-24", "value": 2.4}]
     assert snapshot["glucose"] == [{"date": "2025-06-24", "value": 84.0}]
     assert snapshot["dates"] == ["2025-06-24"]
-    assert list((tmp_path / "salud-data" / "uploads").iterdir()) == []
+    assert list((tmp_path / "salud-data" / "uploads" / "pdfs").iterdir()) == []
 
     for proxy_type in ("rbc", "plt", "wbc"):
         proxy = isolated_api.get(
@@ -105,7 +105,7 @@ def test_real_pdf_from_paths_has_same_frontend_contract_as_upload(
     assert upload_response.status_code == 200
     assert upload_response.json() == path_response.json()
     assert _dashboard_snapshot(isolated_api, sid_upload) == paths_snapshot
-    assert list((tmp_path / "salud-data" / "uploads").iterdir()) == []
+    assert list((tmp_path / "salud-data" / "uploads" / "pdfs").iterdir()) == []
 
 
 def test_unrecognized_real_pdf_is_sanitized_and_atomic(

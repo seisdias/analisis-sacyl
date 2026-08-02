@@ -16,8 +16,7 @@ from .gasometria import Gasometria
 from .orina import Orina
 from .tratamiento import Tratamiento
 from .schema_migrations import create_database, prepare_database, sqlite_rw_uri
-
-DB_FILE = "analisis.db"
+from app.paths import default_database_path
 
 
 class AnalysisDB:
@@ -33,8 +32,8 @@ class AnalysisDB:
       - orina
     """
 
-    def __init__(self, db_path: str = DB_FILE):
-        self.db_path = db_path
+    def __init__(self, db_path: str | Path | None = None):
+        self.db_path = str(default_database_path() if db_path is None else db_path)
         self.conn: Optional[sqlite3.Connection] = None
         self.is_open: bool = False
 
@@ -142,6 +141,5 @@ class AnalysisDB:
 
     def list_orina(self, limit=None):
         return self.orina.list(limit)
-
 
 
