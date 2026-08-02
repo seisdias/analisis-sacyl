@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import os
 from pathlib import Path, PurePath, PureWindowsPath
 import sqlite3
 import time
@@ -385,14 +386,17 @@ def _backup_database(source: sqlite3.Connection, db_path: Path) -> Path:
     backup_dir = db_path.parent / "backups"
     backup_path: Path | None = None
     try:
-        backup_dir.mkdir(parents=True, exist_ok=True)
+        backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if os.name == "posix":
+            os.chmod(backup_dir, 0o700)
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
         backup_path = backup_dir / (
             f"{db_path.name}.pre-migration-v0-to-v{CURRENT_SCHEMA_VERSION}-"
             f"{stamp}-{uuid4().hex}.sqlite3"
         )
-        with backup_path.open("xb"):
-            pass
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+        descriptor = os.open(backup_path, flags, 0o600)
+        os.close(descriptor)
         destination = sqlite3.connect(str(backup_path))
         try:
             deadline = time.monotonic() + _SCHEMA_LOCK_TIMEOUT_SECONDS

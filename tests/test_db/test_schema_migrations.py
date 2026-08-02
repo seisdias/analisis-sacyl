@@ -1,5 +1,7 @@
+import os
 import sqlite3
 from pathlib import Path, PureWindowsPath
+import stat
 import time
 
 import pytest
@@ -220,6 +222,31 @@ def test_adopts_exact_current_unversioned_with_verified_backup(tmp_path):
         assert backup.execute("PRAGMA quick_check").fetchone()[0] == "ok"
         assert backup.execute("PRAGMA user_version").fetchone()[0] == 0
         assert backup.execute("SELECT value FROM app_config WHERE key='kept'").fetchone()[0] == "yes"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="permisos POSIX")
+@pytest.mark.parametrize("preexisting_directory", [False, True])
+def test_backup_and_directory_are_private_with_common_umask(
+    tmp_path, preexisting_directory
+):
+    path = tmp_path / "private-backup.db"
+    _unversioned_current(path)
+    backup_dir = tmp_path / "backups"
+    if preexisting_directory:
+        backup_dir.mkdir(mode=0o755)
+        backup_dir.chmod(0o755)
+
+    original_umask = os.umask(0o022)
+    try:
+        result = migrations.prepare_database(path)
+    finally:
+        os.umask(original_umask)
+
+    assert result.migrated
+    assert _version(path) == migrations.CURRENT_SCHEMA_VERSION
+    assert result.backup_path is not None and result.backup_path.is_file()
+    assert stat.S_IMODE(backup_dir.stat().st_mode) == 0o700
+    assert stat.S_IMODE(result.backup_path.stat().st_mode) == 0o600
 
 
 def test_backup_failure_leaves_unversioned_database_unchanged(tmp_path, monkeypatch):

@@ -1,5 +1,7 @@
 from io import BytesIO
+import os
 from pathlib import Path
+import stat
 
 import pytest
 from fastapi.testclient import TestClient
@@ -135,6 +137,33 @@ def test_same_pdf_names_use_distinct_internal_files_and_are_cleaned(import_api, 
 
     assert response.json()["imported"] == 2
     assert parsed_paths[0] != parsed_paths[1]
+    assert list(upload_dir.iterdir()) == []
+
+
+@pytest.mark.skipif(os.name != "posix", reason="permisos POSIX")
+def test_pdf_temporary_is_private_from_creation_with_common_umask(
+    import_api, monkeypatch
+):
+    client, session_id, upload_dir = import_api
+    observed_modes = []
+
+    def parse(path):
+        observed_modes.append(stat.S_IMODE(Path(path).stat().st_mode))
+        return _parsed_data()
+
+    monkeypatch.setattr(imports_router, "parse_hematology_pdf", parse)
+    original_umask = os.umask(0o022)
+    try:
+        response = client.post(
+            f"/imports/upload?session_id={session_id}",
+            files={"pdf_files": ("report.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
+        )
+    finally:
+        os.umask(original_umask)
+
+    assert response.status_code == 200
+    assert response.json()["imported"] == 1
+    assert observed_modes == [0o600]
     assert list(upload_dir.iterdir()) == []
 
 

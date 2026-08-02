@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import List
 from uuid import uuid4
@@ -120,7 +121,15 @@ async def _store_pdf_upload(upload: UploadFile, destination: Path) -> None:
     if not first_chunk.startswith(b"%PDF-"):
         raise ValueError("El contenido no es un PDF válido")
 
-    with destination.open("xb") as output:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+    descriptor = os.open(destination, flags, 0o600)
+    try:
+        output = os.fdopen(descriptor, "wb")
+    except Exception:
+        os.close(descriptor)
+        raise
+
+    with output:
         output.write(first_chunk)
         while chunk := await upload.read(_UPLOAD_CHUNK_SIZE):
             output.write(chunk)
