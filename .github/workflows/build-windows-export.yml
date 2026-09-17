@@ -1,0 +1,78 @@
+name: Build Windows export
+
+on:
+  push:
+    branches:
+      - build/windows-export-20260917
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            requirements-webview.txt
+            requirements-build.txt
+
+      - name: Verify x64 runner
+        shell: pwsh
+        run: |
+          python --version
+          python -c "import platform; print(platform.machine())"
+          if ([System.Environment]::Is64BitOperatingSystem -ne $true) { throw "Windows no es x64" }
+
+      - name: Install runtime, tests, desktop, and build profiles
+        shell: bash
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt -r requirements-webview.txt -r requirements-build.txt
+
+      - name: Run focused runtime and packaging tests
+        shell: bash
+        run: python -m pytest -q tests/test_runtime_paths.py tests/test_web_main_runtime.py tests/test_js_bridge_runtime.py tests/test_requirements_profiles.py tests/test_offline_build_packaging.py
+
+      - name: Build and smoke-test executable
+        shell: bash
+        run: bash scripts/build_windows.sh
+
+      - name: Re-run executable smoke test
+        shell: bash
+        run: timeout 30s dist/AnalisisSACYL/AnalisisSACYL.exe --smoke-test
+
+      - name: Reject forbidden artifact content
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path "dist/AnalisisSACYL").Path
+          $forbiddenDirs = Get-ChildItem $root -Recurse -Directory | Where-Object { $_.Name -match '^(tests?|data|uploads?|backups?|htmlcov)$' }
+          $forbiddenFiles = Get-ChildItem $root -Recurse -File | Where-Object { $_.Extension -match '^\.(pdf|db|sqlite|sqlite3)$' -or $_.Name -match '(-wal|-shm)$' }
+          if ($forbiddenDirs -or $forbiddenFiles) {
+            $forbiddenDirs.FullName
+            $forbiddenFiles.FullName
+            throw "El artefacto contiene datos o recursos prohibidos."
+          }
+
+      - name: Record source version
+        shell: bash
+        run: |
+          git fetch origin main
+          MAIN_SHA="$(git rev-parse origin/main)"
+          printf 'Windows source branch: main\nWindows source commit: %s\nBuild runner: windows-latest x64\nPython: 3.12\n' "$MAIN_SHA" > BUILD_INFO_WINDOWS.txt
+
+      - name: Upload portable Windows application
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnalisisSACYL-windows-current
+          path: |
+            dist/AnalisisSACYL/
+            BUILD_INFO_WINDOWS.txt
+          if-no-files-found: error
