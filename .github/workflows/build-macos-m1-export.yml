@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -50,13 +52,44 @@ jobs:
           file dist/salud_v1.app/Contents/MacOS/salud_v1
           file dist/salud_v1.app/Contents/MacOS/salud_v1 | grep -q arm64
 
-      - name: Package application for pendrive
+      - name: Runtime smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="dist/salud_v1.app/Contents/MacOS/salud_v1"
+          "$BIN" > mac-runtime-smoke.log 2>&1 &
+          PID=$!
+          OK=0
+          for i in $(seq 1 30); do
+            if curl -fsS "http://127.0.0.1:8000/web/shell.html" >/dev/null; then
+              OK=1
+              break
+            fi
+            if ! kill -0 "$PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          kill "$PID" 2>/dev/null || true
+          wait "$PID" 2>/dev/null || true
+          if [ "$OK" -ne 1 ]; then
+            cat mac-runtime-smoke.log || true
+            exit 1
+          fi
+          echo "Runtime smoke test OK"
+
+      - name: Package application and source for pendrive
         shell: bash
         run: |
           set -euxo pipefail
-          printf 'Source branch: feature/mac-os-tahoe\nSource commit: %s\nBuild runner: macos-15 arm64\nPython: 3.12\n' "${GITHUB_SHA}" > BUILD_INFO.txt
+          git fetch origin main feature/mac-os-tahoe
+          MAIN_SHA="$(git rev-parse origin/main)"
+          MAC_SHA="$(git rev-parse origin/feature/mac-os-tahoe)"
+          git archive --format=zip --prefix=analisis-sacyl-main/ -o AnalisisSACYL-main-source.zip origin/main
+          git archive --format=zip --prefix=analisis-sacyl-mac-os-tahoe/ -o AnalisisSACYL-mac-os-tahoe-source.zip origin/feature/mac-os-tahoe
+          printf 'Mac source branch: feature/mac-os-tahoe\nMac source commit: %s\nWindows source branch: main\nWindows source commit: %s\nBuild runner: macos-15 arm64\nPython: 3.12\n' "$MAC_SHA" "$MAIN_SHA" > BUILD_INFO.txt
           ditto -c -k --sequesterRsrc --keepParent dist/salud_v1.app AnalisisSACYL-macOS-M1.zip
-          shasum -a 256 AnalisisSACYL-macOS-M1.zip > AnalisisSACYL-macOS-M1.zip.sha256
+          shasum -a 256 AnalisisSACYL-macOS-M1.zip AnalisisSACYL-main-source.zip AnalisisSACYL-mac-os-tahoe-source.zip > SHA256SUMS.txt
 
       - name: Upload portable macOS package
         uses: actions/upload-artifact@v4
@@ -64,6 +97,9 @@ jobs:
           name: AnalisisSACYL-macOS-M1
           path: |
             AnalisisSACYL-macOS-M1.zip
-            AnalisisSACYL-macOS-M1.zip.sha256
+            AnalisisSACYL-main-source.zip
+            AnalisisSACYL-mac-os-tahoe-source.zip
+            SHA256SUMS.txt
             BUILD_INFO.txt
+            mac-runtime-smoke.log
           if-no-files-found: error
