@@ -178,10 +178,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif args.desktop:
             _run_desktop(server)
         else:
-            # Default explícito: conserva desktop con fallback a navegador.
+            # Portable Windows: intenta primero pywebview y, ante CUALQUIER fallo
+            # del backend gráfico (WebView2/.NET/COM/etc.), abre la misma UI en
+            # el navegador del sistema en vez de cerrar silenciosamente.
             try:
                 _run_desktop(server)
-            except RuntimeError:
+            except Exception:
+                logger.exception("Fallo del modo desktop; usando navegador como fallback")
                 _run_browser(server, open_browser="PYTEST_CURRENT_TEST" not in os.environ)
         return 0
     finally:
