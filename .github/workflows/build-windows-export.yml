@@ -41,18 +41,98 @@ jobs:
         shell: bash
         run: python -m pytest -q tests/test_runtime_paths.py tests/test_web_main_runtime.py tests/test_js_bridge_runtime.py tests/test_requirements_profiles.py tests/test_offline_build_packaging.py
 
-      - name: Build and smoke-test executable
+      - name: Build standard desktop executable
         shell: bash
         run: bash scripts/build_windows.sh
 
-      - name: Re-run executable smoke test
+      - name: Build browser-only and console-diagnostic executables
         shell: bash
-        run: timeout 30s dist/AnalisisSACYL/AnalisisSACYL.exe --smoke-test
+        run: |
+          python -m PyInstaller --noconfirm --clean --distpath dist-browser --workpath build-browser AnalisisSACYL-Browser.spec
+          python -m PyInstaller --noconfirm --clean --distpath dist-diagnostic --workpath build-diagnostic AnalisisSACYL-Diagnostico.spec
 
-      - name: Reject forbidden artifact content
+      - name: Smoke-test all three packages
+        shell: bash
+        run: |
+          timeout 30s dist/AnalisisSACYL/AnalisisSACYL.exe --smoke-test
+          timeout 30s dist-browser/AnalisisSACYL-Browser/AnalisisSACYL-Browser.exe --smoke-test
+          timeout 30s dist-diagnostic/AnalisisSACYL-Diagnostico/AnalisisSACYL-Diagnostico.exe --smoke-test
+
+      - name: Assemble V3 portable package
         shell: pwsh
         run: |
-          $root = (Resolve-Path "dist/AnalisisSACYL").Path
+          $pkg = "package/AnalisisSACYL-Windows-V3"
+          New-Item -ItemType Directory -Force "$pkg/DESKTOP" | Out-Null
+          New-Item -ItemType Directory -Force "$pkg/BROWSER" | Out-Null
+          New-Item -ItemType Directory -Force "$pkg/DIAGNOSTICO" | Out-Null
+
+          Copy-Item "dist/AnalisisSACYL/*" "$pkg/DESKTOP/" -Recurse -Force
+          Copy-Item "dist-browser/AnalisisSACYL-Browser/*" "$pkg/BROWSER/" -Recurse -Force
+          Copy-Item "dist-diagnostic/AnalisisSACYL-Diagnostico/*" "$pkg/DIAGNOSTICO/" -Recurse -Force
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          start "" "%~dp0BROWSER\AnalisisSACYL-Browser.exe"
+          '@ | Set-Content -Encoding ASCII "$pkg/INICIAR_ANALISISSACYL.bat"
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          start "" "%~dp0DESKTOP\AnalisisSACYL.exe"
+          '@ | Set-Content -Encoding ASCII "$pkg/INICIAR_DESKTOP_NATIVO.bat"
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          set LOG=%~dp0DIAGNOSTICO_LOG.txt
+          echo === AnalisisSACYL Windows V3 === > "%LOG%"
+          echo Fecha: %DATE% %TIME% >> "%LOG%"
+          echo Arquitectura: %PROCESSOR_ARCHITECTURE% >> "%LOG%"
+          echo Windows: >> "%LOG%"
+          ver >> "%LOG%" 2>&1
+          echo. >> "%LOG%"
+          echo Ejecutando smoke test con consola... >> "%LOG%"
+          "%~dp0DIAGNOSTICO\AnalisisSACYL-Diagnostico.exe" --smoke-test >> "%LOG%" 2>&1
+          set CODE=%ERRORLEVEL%
+          echo. >> "%LOG%"
+          echo Exit code: %CODE% >> "%LOG%"
+          type "%LOG%"
+          echo.
+          echo El informe se ha guardado en:
+          echo %LOG%
+          echo.
+          pause
+          exit /b %CODE%
+          '@ | Set-Content -Encoding ASCII "$pkg/DIAGNOSTICO_COMPLETO.bat"
+
+          @'
+          @echo off
+          taskkill /IM AnalisisSACYL.exe /F >nul 2>&1
+          taskkill /IM AnalisisSACYL-Browser.exe /F >nul 2>&1
+          taskkill /IM AnalisisSACYL-Diagnostico.exe /F >nul 2>&1
+          exit /b 0
+          '@ | Set-Content -Encoding ASCII "$pkg/CERRAR_ANALISISSACYL.bat"
+
+          @'
+          ANALISISSACYL WINDOWS PORTABLE V3
+          =================================
+
+          PRIMERA PRUEBA EN WINDOWS 11
+          1. Descomprime TODO el ZIP en una carpeta local (por ejemplo C:\AnalisisSACYL-V3).
+          2. Ejecuta INICIAR_ANALISISSACYL.bat. Esta es la variante recomendada: abre la UI en el navegador y NO usa pywebview.
+          3. Si quieres probar la ventana nativa, ejecuta INICIAR_DESKTOP_NATIVO.bat.
+          4. Si cualquiera falla, ejecuta DIAGNOSTICO_COMPLETO.bat.
+          5. DIAGNOSTICO_COMPLETO.bat crea DIAGNOSTICO_LOG.txt con el error real y el exit code.
+
+          No se necesita Python ni PyCharm en el PC destino.
+          No ejecutes desde dentro del ZIP: descomprime todo antes.
+          '@ | Set-Content -Encoding UTF8 "$pkg/LEEME_PRIMERO.txt"
+
+      - name: Reject forbidden content in V3 package
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path "package/AnalisisSACYL-Windows-V3").Path
           $forbiddenDirs = Get-ChildItem $root -Recurse -Directory | Where-Object { $_.Name -match '^(tests?|data|uploads?|backups?|htmlcov)$' }
           $forbiddenFiles = Get-ChildItem $root -Recurse -File | Where-Object { $_.Extension -match '^\.(pdf|db|sqlite|sqlite3)$' -or $_.Name -match '(-wal|-shm)$' }
           if ($forbiddenDirs -or $forbiddenFiles) {
@@ -61,69 +141,16 @@ jobs:
             throw "El artefacto contiene datos o recursos prohibidos."
           }
 
-      - name: Add Windows launchers and diagnostics
-        shell: pwsh
-        run: |
-          $root = "dist/AnalisisSACYL"
-
-          @'
-          @echo off
-          cd /d "%~dp0"
-          start "" "AnalisisSACYL.exe"
-          '@ | Set-Content -Encoding ASCII "$root/INICIAR_ANALISISSACYL.bat"
-
-          @'
-          @echo off
-          cd /d "%~dp0"
-          start "" "AnalisisSACYL.exe" --browser
-          '@ | Set-Content -Encoding ASCII "$root/INICIAR_EN_NAVEGADOR.bat"
-
-          @'
-          @echo off
-          cd /d "%~dp0"
-          echo Probando backend y recursos de AnalisisSACYL...
-          AnalisisSACYL.exe --smoke-test
-          if errorlevel 1 (
-            echo.
-            echo ERROR: el smoke test ha fallado en este PC.
-          ) else (
-            echo.
-            echo OK: backend y recursos funcionan correctamente en este PC.
-          )
-          echo.
-          pause
-          '@ | Set-Content -Encoding ASCII "$root/DIAGNOSTICO_WINDOWS.bat"
-
-          @'
-          @echo off
-          taskkill /IM AnalisisSACYL.exe /F >nul 2>&1
-          exit /b 0
-          '@ | Set-Content -Encoding ASCII "$root/CERRAR_ANALISISSACYL.bat"
-
-          @'
-          ANALISISSACYL WINDOWS PORTABLE
-          ==============================
-
-          1. Descomprime TODO el ZIP antes de ejecutar.
-          2. Ejecuta INICIAR_ANALISISSACYL.bat.
-          3. Si no aparece la ventana, ejecuta INICIAR_EN_NAVEGADOR.bat.
-          4. DIAGNOSTICO_WINDOWS.bat comprueba backend y recursos en el PC real.
-          5. CERRAR_ANALISISSACYL.bat termina cualquier proceso que quede en segundo plano.
-
-          No se necesita Python ni PyCharm en el PC destino.
-          '@ | Set-Content -Encoding UTF8 "$root/LEEME_WINDOWS.txt"
-
       - name: Record source version
         shell: bash
         run: |
           git fetch origin main
           MAIN_SHA="$(git rev-parse origin/main)"
-          printf 'Windows source branch: main\nWindows source commit: %s\nPackaging branch commit: %s\nBuild runner: windows-latest x64\nPython: 3.12\nPortable fallback: any desktop GUI exception -> system browser\n' "$MAIN_SHA" "$GITHUB_SHA" > BUILD_INFO_WINDOWS.txt
-          cp BUILD_INFO_WINDOWS.txt dist/AnalisisSACYL/BUILD_INFO_WINDOWS.txt
+          printf 'Windows source branch: main\nWindows source commit: %s\nPackaging branch commit: %s\nBuild runner: windows-latest x64\nPython: 3.12\nV3 includes: browser-only + desktop pywebview + console diagnostic\n' "$MAIN_SHA" "$GITHUB_SHA" > package/AnalisisSACYL-Windows-V3/BUILD_INFO_WINDOWS.txt
 
-      - name: Upload portable Windows application
+      - name: Upload Windows V3 portable package
         uses: actions/upload-artifact@v4
         with:
-          name: AnalisisSACYL-windows-current
-          path: dist/AnalisisSACYL/
+          name: AnalisisSACYL-windows-v3
+          path: package/AnalisisSACYL-Windows-V3/
           if-no-files-found: error
