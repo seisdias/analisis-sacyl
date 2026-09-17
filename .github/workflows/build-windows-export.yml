@@ -61,18 +61,69 @@ jobs:
             throw "El artefacto contiene datos o recursos prohibidos."
           }
 
+      - name: Add Windows launchers and diagnostics
+        shell: pwsh
+        run: |
+          $root = "dist/AnalisisSACYL"
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          start "" "AnalisisSACYL.exe"
+          '@ | Set-Content -Encoding ASCII "$root/INICIAR_ANALISISSACYL.bat"
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          start "" "AnalisisSACYL.exe" --browser
+          '@ | Set-Content -Encoding ASCII "$root/INICIAR_EN_NAVEGADOR.bat"
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          echo Probando backend y recursos de AnalisisSACYL...
+          AnalisisSACYL.exe --smoke-test
+          if errorlevel 1 (
+            echo.
+            echo ERROR: el smoke test ha fallado en este PC.
+          ) else (
+            echo.
+            echo OK: backend y recursos funcionan correctamente en este PC.
+          )
+          echo.
+          pause
+          '@ | Set-Content -Encoding ASCII "$root/DIAGNOSTICO_WINDOWS.bat"
+
+          @'
+          @echo off
+          taskkill /IM AnalisisSACYL.exe /F >nul 2>&1
+          exit /b 0
+          '@ | Set-Content -Encoding ASCII "$root/CERRAR_ANALISISSACYL.bat"
+
+          @'
+          ANALISISSACYL WINDOWS PORTABLE
+          ==============================
+
+          1. Descomprime TODO el ZIP antes de ejecutar.
+          2. Ejecuta INICIAR_ANALISISSACYL.bat.
+          3. Si no aparece la ventana, ejecuta INICIAR_EN_NAVEGADOR.bat.
+          4. DIAGNOSTICO_WINDOWS.bat comprueba backend y recursos en el PC real.
+          5. CERRAR_ANALISISSACYL.bat termina cualquier proceso que quede en segundo plano.
+
+          No se necesita Python ni PyCharm en el PC destino.
+          '@ | Set-Content -Encoding UTF8 "$root/LEEME_WINDOWS.txt"
+
       - name: Record source version
         shell: bash
         run: |
           git fetch origin main
           MAIN_SHA="$(git rev-parse origin/main)"
-          printf 'Windows source branch: main\nWindows source commit: %s\nBuild runner: windows-latest x64\nPython: 3.12\n' "$MAIN_SHA" > BUILD_INFO_WINDOWS.txt
+          printf 'Windows source branch: main\nWindows source commit: %s\nPackaging branch commit: %s\nBuild runner: windows-latest x64\nPython: 3.12\nPortable fallback: any desktop GUI exception -> system browser\n' "$MAIN_SHA" "$GITHUB_SHA" > BUILD_INFO_WINDOWS.txt
+          cp BUILD_INFO_WINDOWS.txt dist/AnalisisSACYL/BUILD_INFO_WINDOWS.txt
 
       - name: Upload portable Windows application
         uses: actions/upload-artifact@v4
         with:
           name: AnalisisSACYL-windows-current
-          path: |
-            dist/AnalisisSACYL/
-            BUILD_INFO_WINDOWS.txt
+          path: dist/AnalisisSACYL/
           if-no-files-found: error
